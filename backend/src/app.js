@@ -1,53 +1,55 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
+require('dotenv').config();  //variabili di ambiente
+const express = require('express'); //middelware 
+const mongoose = require('mongoose'); //interfaccia con mongoDB
+const cors = require('cors'); //permette al frontend di comunicare con il backend senza blocchi di sicurezza
+const path = require('path'); //gestione dei percorsi
+const fs = require('fs'); //lettura o scrittura di file --> per il caricamento automatico dei piatti
 
-const authRoutes = require('./routes/auth');
-const dishRoutes = require('./routes/dishes');
-const { authMiddleware } = require('./middleware/auth');
-const Dish = require('./models/Dish');
+const authRoutes = require('./routes/auth'); //importa le rotte di autenticazione
+const dishRoutes = require('./routes/dishes'); //importa le rotte dei piatti
+const { authMiddleware } = require('./middleware/auth'); //importa il middleware di autenticazione
+const Dish = require('./models/Dish'); //importa il modello Dish
 
-// Funzione per il caricamento automatico dei piatti 
+//Funzione per il caricamento automatico dei piatti 
 async function autoSeed() {
-  const count = await Dish.countDocuments();
-  if (count === 0) {
+  const count = await Dish.countDocuments(); //conta i documenti nella collezione Dish
+  if (count === 0) { //se la collezione è vuota legge il file meals.json e importa i piatti
     console.log('Database vuoto, importo meals.json...');
-    const filePath = path.join(__dirname, '../../data/meals.json');
-    const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    const filePath = path.join(__dirname, '../../data/meals.json'); 
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf-8')); //legge il file e lo converte in oggetto JS
+    //mappappatura dei dati per adattarli allo schema Dish
     const docs = data.map(m => ({
-      externalId: String(m.idMeal || m.externalId || ''),
+      externalId: String(m.idMeal || m.externalId || ''), 
       name: m.strMeal || m.name,
       category: m.strCategory || m.category || '',
       area: m.strArea || m.area || '',
       image: m.strMealThumb || m.image || '',
       ingredients: m.ingredients || [],
       measures: m.measures || [],
-      price: Number(m.price || 0) || 8.0,
+      price: Number(m.price || 0) || 10.0, //se m.price è truthy lo converte in numero, altrimenti assegna 0. Se il risultato è 0 (falsy), assegna 10.0.
       source: 'catalog'
     }));
-    await Dish.insertMany(docs);
+    await Dish.insertMany(docs); //inserisce i documenti nella collezione Dish
     console.log(`Importati ${docs.length} piatti da meals.json`);
   } else {
     console.log('Catalogo già popolato.');
   }
 }
 
+//Configurazione di express
 const app = express();
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json()); //permette di leggere i dati in formato JSON
+app.use(express.urlencoded({ extended: true })); //permette di leggere i dati dai form
 
-// Serve static frontend
+//Serve frontend static files
 app.use('/', express.static(path.join(__dirname, '../../frontend')));
 
-// API routes
-app.use('/api/auth', authRoutes);
+//API routes
+app.use('/api/lv/users', authRoutes);
 app.use('/api/dishes', dishRoutes);
 
-// Example protected route: whoami
+//Example protected route: whoami
 app.get('/api/users/me', authMiddleware, async (req, res) => {
   res.json({ success: true, data: { userId: req.user.userId, email: req.user.email, role: req.user.role } });
 });

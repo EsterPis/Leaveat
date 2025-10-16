@@ -11,7 +11,7 @@ function signToken(user) {
 }
 
 /**
- * POST /api/auth/register
+ * POST /api/lv/users/register
  * body: { email, password, role }
  */
 router.post('/register', async (req, res) => {
@@ -29,7 +29,7 @@ router.post('/register', async (req, res) => {
 });
 
 /**
- * POST /api/auth/login
+ * POST /api/lv/users/login
  * body: { email, password }
  */
 router.post('/login', async (req, res) => {
