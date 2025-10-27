@@ -1,0 +1,4 @@
+Script per svuotare completamente il db + modifica in app.js funzione seed()
+    Anzichè controllare che sia vuoto dish controlla che sia vuoto tutto il db.
+
+    TRello

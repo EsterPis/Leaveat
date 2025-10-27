@@ -24,8 +24,9 @@ async function autoSeed() {
       category: m.strCategory || m.category || '',
       area: m.strArea || m.area || '',
       image: m.strMealThumb || m.image || '',
-      ingredients: m.ingredients || [],
-      measures: m.measures || [],
+      description: m.strInstructions || m.description || '',
+      ingredients: Array.isArray(m.ingredients) ? m.ingredients : [],
+      measures: Array.isArray(m.measures) ? m.measures : [],
       price: Number(m.price || 0) || 10.0, //se m.price è truthy lo converte in numero, altrimenti assegna 0. Se il risultato è 0 (falsy), assegna 10.0.
       source: 'catalog'
     }));
@@ -47,7 +48,7 @@ app.use('/', express.static(path.join(__dirname, '../../frontend')));
 
 //API routes
 app.use('/api/lv/users', authRoutes);
-app.use('/api/dishes', dishRoutes);
+app.use('/api/lv/dishes', dishRoutes);
 
 //Example protected route: whoami
 app.get('/api/users/me', authMiddleware, async (req, res) => {

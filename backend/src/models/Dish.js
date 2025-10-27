@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
 const DishSchema = new mongoose.Schema({
   externalId: { type: String, index: true },
@@ -6,9 +7,11 @@ const DishSchema = new mongoose.Schema({
   category: { type: String, index: true },
   area: { type: String },
   image: { type: String },
-  ingredients: [{ type: String }],
+  description: { type: String },
+  ingredients: [{ type: String, required: true }],
   measures: [{ type: String }],
-  price: { type: Number, default: 0 },
+  price: { type: Number, default: 0, required: true },
+  restaurantId: { type: Schema.Types.ObjectId, ref: 'Restaurant' },
   source: { type: String, enum: ['catalog', 'restaurant'], default: 'catalog' }
 }, { timestamps: true });
 

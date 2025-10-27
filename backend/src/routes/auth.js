@@ -12,16 +12,23 @@ function signToken(user) {
 
 /**
  * POST /api/lv/users/register
- * body: { email, password, role }
+ * body: { firstName, lastName, email, phoneNumber, password, role}
  */
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, role } = req.body;
-    if (!email || !password) return res.status(400).json({ success: false, message: 'Email e password sono obbligatorie' });
-    const exists = await User.findOne({ email });
+    //estrazione dei campi dal body
+    const { firstName, lastName, email, phoneNumber, password, role } = req.body;
+
+    //controllo sui campi - verifica che non esistano già email o numero di telefono
+    if (!email || !password || !firstName || !lastName || !phoneNumber ) return res.status(400).json({ success: false, message: 'Compilare tutti i campi' });
+    let exists = await User.findOne({ email });
     if (exists) return res.status(409).json({ success: false, message: 'Email già registrata' });
-    const user = await User.create({ email, password, role: role || 'CUSTOMER' });
-    const token = signToken(user);
+    exists = await User.findOne({ phoneNumber });
+    if (exists) return res.status(409).json({ success: false, message: 'Numero di telefono già registrato' });
+
+    //creazione utente
+    const user = await User.create({ firstName, lastName, email, phoneNumber, password, role: role || 'CUSTOMER' });
+    const token = signToken(user); //generazione token JWT
     return res.status(201).json({ success: true, data: { token } });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Errore server', error: err.message });
@@ -35,12 +42,18 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    //cerca utente per email
     const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ success: false, message: 'Credenziali non valide' });
+    if (!user) return res.status(401).json({ success: false, message: 'Utente non trovato' });
+
+    //verifica password
     const ok = await user.comparePassword(password);
-    if (!ok) return res.status(401).json({ success: false, message: 'Credenziali non valide' });
-    const token = signToken(user);
+    if (!ok) return res.status(401).json({ success: false, message: 'Password errata' });
+
+    const token = signToken(user); //generazione token JWT
     return res.json({ success: true, data: { token } });
+    
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Errore server', error: err.message });
   }

@@ -1,49 +1,83 @@
-function setMessage(el, text, type='success') {
+// Base API per le rotte utente
+const API_BASE = '/api/lv/users';
+
+// Messaggi d'aiuto Bootstrap
+function setMessage(el, text, type = 'success') {
   el.innerHTML = `<div class="alert alert-${type}" role="alert">${text}</div>`;
 }
 
+// ----- REGISTRAZIONE -----
 function setupRegister() {
   const form = document.getElementById('regForm');
   const msg = document.getElementById('msg');
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const data = Object.fromEntries(new FormData(form).entries());
+    msg.innerHTML = '';
+
+    const formData = Object.fromEntries(new FormData(form).entries());
+
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch(`${API_BASE}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(formData)
       });
+
       const out = await res.json();
-      if (!out.success) throw new Error(out.message || 'Errore registrazione');
-      localStorage.setItem('token', out.data.token);
-      setMessage(msg, 'Registrazione completata! Verifica il tuo profilo nella home.');
-      setTimeout(() => window.location.href = '/', 700);
+
+      if (!out.success) {
+        throw new Error(out.message || 'Errore durante la registrazione');
+      }
+
+      setMessage(msg, 'Registrazione completata! Ora puoi accedere.', 'success');
+      setTimeout(() => (window.location.href = '/login.html'), 1500);
     } catch (err) {
       setMessage(msg, err.message, 'danger');
     }
   });
 }
 
+// ----- LOGIN -----
 function setupLogin() {
   const form = document.getElementById('loginForm');
-  const msg = document.getElementById('msg');
+  const msg = document.getElementById('msg'); 
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const data = Object.fromEntries(new FormData(form).entries());
+    msg.innerHTML = '';
+
+    //estrazione di email e password dal form
+    const { email, password } = Object.fromEntries(new FormData(form).entries());
+
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(`${API_BASE}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        headers: { 'Content-Type': 'application/json' }, //indica che il corpo della richiesta è in formato JSON
+        body: JSON.stringify({ email, password })
       });
+
       const out = await res.json();
-      if (!out.success) throw new Error(out.message || 'Errore login');
-      localStorage.setItem('token', out.data.token);
-      setMessage(msg, 'Login ok! Reindirizzo...', 'success');
-      setTimeout(() => window.location.href = '/', 700);
+
+      if (!out.success) {
+        if (out.message === 'Utente non trovato') {
+          setMessage(msg, `Utente non registrato. <a href="/register.html">Registrati qui</a>`, 'warning');
+        } else {
+          setMessage(msg, out.message || 'Credenziali non valide.', 'danger');
+        }
+        return;
+      }
+
+      const token = out.data?.token;
+      if (!token) throw new Error('Token mancante nella risposta del server');
+
+      // Salva il token nel localStorage per autenticare richieste future
+      localStorage.setItem('token', token);
+
+      setMessage(msg, 'Accesso riuscito! Reindirizzamento...', 'success');
+      setTimeout(() => (window.location.href = '/index.html'), 1000);
     } catch (err) {
-      setMessage(msg, err.message, 'danger');
+      setMessage(msg, err.message || 'Errore di connessione al server', 'danger');
     }
   });
 }
