@@ -11,14 +11,19 @@ const { authMiddleware } = require('./middleware/auth'); //importa il middleware
 const Dish = require('./models/Dish'); //importa il modello Dish
 
 //Funzione per il caricamento automatico dei piatti 
-async function autoSeed() {
+async function isCatalogEmpty() {
   const count = await Dish.countDocuments(); //conta i documenti nella collezione Dish
-  if (count === 0) { //se la collezione è vuota legge il file meals.json e importa i piatti
-    console.log('Database vuoto, importo meals.json...');
+    return count === 0;
+} 
+ 
+function loadMealsData(){ //se la collezione è vuota legge il file meals.json e importa i piatti
     const filePath = path.join(__dirname, '../../data/meals.json'); 
-    const data = JSON.parse(fs.readFileSync(filePath, 'utf-8')); //legge il file e lo converte in oggetto JS
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8')); //legge il file e lo converte in oggetto JS
+}
+ 
+function mapMealsToDishes(data){
     //mappappatura dei dati per adattarli allo schema Dish
-    const docs = data.map(m => ({
+    return data.map(m => ({
       externalId: String(m.idMeal || m.externalId || ''), 
       name: m.strMeal || m.name,
       category: m.strCategory || m.category || '',
@@ -30,6 +35,13 @@ async function autoSeed() {
       price: Number(m.price || 0) || 10.0, //se m.price è truthy lo converte in numero, altrimenti assegna 0. Se il risultato è 0 (falsy), assegna 10.0.
       source: 'catalog'
     }));
+}
+
+async function importMealsIfEmpty(){
+  if (await isCatalogEmpty()) {
+     console.log('Database vuoto, importo meals.json...');
+     const meals = loadMealsData();
+     const docs = mapMealsToDishes(meals);
     await Dish.insertMany(docs); //inserisce i documenti nella collezione Dish
     console.log(`Importati ${docs.length} piatti da meals.json`);
   } else {
@@ -67,7 +79,7 @@ async function start() {
     }
     await mongoose.connect(uri, { dbName });
     console.log('MongoDB connected');
-    await autoSeed(); 
+    await importMealsIfEmpty();
 
     app.listen(PORT, () => console.log('Server running on port ' + PORT));
   } catch (err) {

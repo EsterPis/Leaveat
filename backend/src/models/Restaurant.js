@@ -6,7 +6,7 @@ const RestaurantSchema = new mongoose.Schema({
     address: { type: String, required: true, trim: true },
     //collegamento menù (1:1)
     menuId:{ type: mongoose.Schema.Types.ObjectId, ref: 'Menu', unique: true},
-    status: { type: String, enum: ['DRAFT','ACTIVe'], default: 'DRAFT'},
+    status: { type: String, enum: ['DRAFT','ACTIVE'], default: 'DRAFT'},
     //collegamento ordini (0:n)
     orderIds:[{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }],
 });
