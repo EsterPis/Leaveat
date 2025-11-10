@@ -29,7 +29,7 @@ router.post('/register', async (req, res) => {
     //creazione utente
     const user = await User.create({ firstName, lastName, email, phoneNumber, password, role: role || 'CUSTOMER' });
     const token = signToken(user); //generazione token JWT
-    return res.status(201).json({ success: true, data: { token } });
+    return res.status(201).json({ success: true, data: { token, userId: user._id, role: user.role } });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Errore server', error: err.message });
   }

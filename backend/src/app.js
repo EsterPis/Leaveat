@@ -9,6 +9,8 @@ const authRoutes = require('./routes/auth'); //importa le rotte di autenticazion
 const dishRoutes = require('./routes/dishes'); //importa le rotte dei piatti
 const { authMiddleware } = require('./middleware/auth'); //importa il middleware di autenticazione
 const Dish = require('./models/Dish'); //importa il modello Dish
+const customerRoutes = require('./routes/customers'); //importa le rotte dei clienti
+const categoryRoutes = require('./routes/categories');
 
 //Funzione per il caricamento automatico dei piatti 
 async function isCatalogEmpty() {
@@ -60,7 +62,9 @@ app.use('/', express.static(path.join(__dirname, '../../frontend')));
 
 //API routes
 app.use('/api/lv/users', authRoutes);
+app.use('/api/lv/customers', customerRoutes);
 app.use('/api/lv/dishes', dishRoutes);
+app.use('/api/lv/categories', categoryRoutes);
 
 //Example protected route: whoami
 app.get('/api/users/me', authMiddleware, async (req, res) => {

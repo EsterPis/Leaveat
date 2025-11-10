@@ -29,9 +29,20 @@ function setupRegister() {
       if (!out.success) {
         throw new Error(out.message || 'Errore durante la registrazione');
       }
+      localStorage.setItem('token', out.data.token);
+      localStorage.setItem('userId', out.data.userId);
+      localStorage.setItem('firstName', formData.firstName);
+      localStorage.setItem('role', out.data.role);
 
-      setMessage(msg, 'Registrazione completata! Ora puoi accedere.', 'success');
-      setTimeout(() => (window.location.href = '/login.html'), 1500);
+      // reindirizza in base al ruolo scelto
+      if (out.data.role === 'CUSTOMER') {
+        setTimeout(() => (window.location.href = '/complete-customer.html'), 1500);
+      } else if (out.data.role === 'RESTAURATEUR') {
+        setTimeout(() => (window.location.href = '/complete-restaurateur.html'), 1500);
+      } else {
+        setTimeout(() => (window.location.href = '/login.html'), 1500);
+      }
+
     } catch (err) {
       setMessage(msg, err.message, 'danger');
     }
@@ -41,7 +52,7 @@ function setupRegister() {
 // ----- LOGIN -----
 function setupLogin() {
   const form = document.getElementById('loginForm');
-  const msg = document.getElementById('msg'); 
+  const msg = document.getElementById('msg');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
