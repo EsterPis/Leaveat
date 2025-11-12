@@ -50,21 +50,21 @@ function setupRegister() {
 }
 
 // ----- LOGIN -----
+// ----- LOGIN -----
 function setupLogin() {
   const form = document.getElementById('loginForm');
-  const msg = document.getElementById('msg');
+  const msg = document.getElementById('msg'); 
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     msg.innerHTML = '';
 
-    //estrazione di email e password dal form
     const { email, password } = Object.fromEntries(new FormData(form).entries());
 
     try {
       const res = await fetch(`${API_BASE}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }, //indica che il corpo della richiesta è in formato JSON
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
 
@@ -79,11 +79,22 @@ function setupLogin() {
         return;
       }
 
+      // ✅ Salviamo i dati nel localStorage
       const token = out.data?.token;
       if (!token) throw new Error('Token mancante nella risposta del server');
 
-      // Salva il token nel localStorage per autenticare richieste future
+      // Decodifica del token per ricavare nome, email e ruolo
+      const payload = JSON.parse(atob(token.split('.')[1]));
       localStorage.setItem('token', token);
+      localStorage.setItem('userId', payload.userId);
+      localStorage.setItem('role', payload.role);
+      localStorage.setItem('email', payload.email);
+
+      // Se hai già salvato anche firstName in fase di registrazione:
+      // lo manteniamo sincronizzato
+      if (!localStorage.getItem('firstName')) {
+        localStorage.setItem('firstName', payload.firstName || 'Utente');
+      }
 
       setMessage(msg, 'Accesso riuscito! Reindirizzamento...', 'success');
       setTimeout(() => (window.location.href = '/index.html'), 1000);

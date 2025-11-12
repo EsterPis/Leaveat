@@ -4,9 +4,10 @@ const User = require('../models/User');
 const router = express.Router();
 
 function signToken(user) {
-  const payload = { userId: user._id.toString(), email: user.email, role: user.role };
+  const payload = { userId: user._id.toString(), email: user.email, role: user.role, firstName:user.firstName };
   const options = { expiresIn: process.env.TOKEN_EXPIRES_IN || '24h' };
   const secret = process.env.JWT_SECRET || 'devsecret';
+
   return jwt.sign(payload, secret, options);
 }
 

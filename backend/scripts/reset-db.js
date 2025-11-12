@@ -5,7 +5,7 @@
  */
 
 const path = require('path'); 
-require('dotenv').config({ path: path.join(__dirname, '..', 'src', '.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../src/.env') });
 const mongoose = require('mongoose');
 
 // Percorso base dei modelli
