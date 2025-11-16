@@ -1,41 +1,125 @@
-// Gestisce le modifiche a index.html quando è attiva una sessione utente
-document.addEventListener('DOMContentLoaded', () => {
-  const token = localStorage.getItem('token');
-  const name = localStorage.getItem('firstName');
+// ========================================================
+//  SESSIONE UTENTE - GESTIONE FRONTEND
+// ========================================================
 
-  const navbar = document.querySelector('.navbar .ms-auto');
-  const headerTitle = document.querySelector('h1.display-6');
+// Entry point
+document.addEventListener("DOMContentLoaded", initSession);
 
-  if (!navbar) return;
 
-  // Se l'utente è loggato
-  if (token && name) {
-    // 1️⃣ Aggiorna navbar
+// --------------------------------------------------------
+// Inizializzazione della sessione
+// --------------------------------------------------------
+async function initSession() {
+    const token = getToken();
+
+    if (!token) {
+        renderLoggedOutNavbar();
+        return;
+    }
+
+    // Verifica token con /users/me
+    const user = await validateToken(token);
+
+    if (!user) {
+        logout();
+        return;
+    }
+
+    // Salvo i dati minimi nel localStorage (se non già presenti)
+    saveUserToStorage(user);
+
+    // Aggiorno UI
+    renderLoggedInNavbar(user);
+    updateWelcomeTitle(user);
+}
+
+
+// --------------------------------------------------------
+// Funzioni: Token / Storage
+// --------------------------------------------------------
+function getToken() {
+    return localStorage.getItem("token");
+}
+
+function saveUserToStorage(user) {
+    localStorage.setItem("firstName", user.firstName);
+    localStorage.setItem("role", user.role);
+    localStorage.setItem("email", user.email);
+}
+
+
+// --------------------------------------------------------
+// Verifica token presso il backend
+// --------------------------------------------------------
+async function validateToken(token) {
+    try {
+        const response = await fetch("http://localhost:3005/api/lv/users/me", {
+            headers: { "Authorization": "Bearer " + token }
+        });
+
+        if (!response.ok) return null;
+
+        const json = await response.json();
+        return json.data; // nel tuo backend i dati stanno in data
+    } catch (err) {
+        console.error("Errore validazione token:", err);
+        return null;
+    }
+}
+
+
+// --------------------------------------------------------
+// UI: Navbar quando utente NON è loggato
+// --------------------------------------------------------
+function renderLoggedOutNavbar() {
+    const navbar = document.querySelector(".navbar .ms-auto");
+    if (!navbar) return;
+
+    navbar.innerHTML = `
+        <a class="btn btn-outline-light btn-sm" href="/login.html">Login</a>
+        <a class="btn btn-warning btn-sm" href="/register.html">Registrati</a>
+    `;
+}
+
+
+// --------------------------------------------------------
+// UI: Navbar quando utente È loggato
+// --------------------------------------------------------
+function renderLoggedInNavbar(user) {
+    const navbar = document.querySelector(".navbar .ms-auto");
+    if (!navbar) return;
+
     navbar.innerHTML = `
       <div class="d-flex align-items-center gap-3">
-        <span class="text-white">Ciao, <strong>${name}</strong></span>
+        <span class="text-white">Ciao, <strong>${user.firstName}</strong></span>
+
         <a href="/account.html" class="btn btn-outline-light btn-sm" title="Profilo utente">
           <i class="bi bi-person-circle"></i>
         </a>
+
         <button id="logout-btn" class="btn btn-danger btn-sm">Logout</button>
       </div>
     `;
 
-    // 2️⃣ Aggiunge nome anche nel titolo principale
-    if (headerTitle) headerTitle.textContent = `Benvenuto su Leaveat, ${name}!`;
+    document.getElementById("logout-btn").addEventListener("click", logout);
+}
 
-    // 3️⃣ Gestione logout
-    document.getElementById('logout-btn').addEventListener('click', () => {
-      localStorage.clear();
-      window.location.href = '/login.html';
-    });
 
-  } else {
-    // Se non loggato, mostra i bottoni classici
-    navbar.innerHTML = `
-      <a class="btn btn-outline-light btn-sm" href="/login.html">Login</a>
-      <a class="btn btn-warning btn-sm" href="/register.html">Registrati</a>
-    `;
-  }
-});
+// --------------------------------------------------------
+// UI: Messaggio di benvenuto nella home
+// --------------------------------------------------------
+function updateWelcomeTitle(user) {
+    const headerTitle = document.querySelector("h1.display-6");
+    if (!headerTitle) return;
 
+    headerTitle.textContent = `Benvenuto su Leaveat, ${user.firstName}!`;
+}
+
+
+// --------------------------------------------------------
+// LOGOUT
+// --------------------------------------------------------
+function logout() {
+    localStorage.clear();
+    window.location.href = "/index.html";
+}

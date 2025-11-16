@@ -41,7 +41,7 @@ async function resetDatabase() {
       console.log(`Cancellata collezione: ${model.modelName}`);
     }
 
-    console.log('\n✨ Database resettato con successo (nessun dato presente).');
+    console.log('\nDatabase resettato con successo (nessun dato presente).');
 
     await mongoose.disconnect();
     console.log('Disconnessione completata.');

@@ -30,6 +30,7 @@ function loadMealsData() {
     return data.slice(0, 20); // ne prendiamo solo 20 per evitare troppi documenti
 }
 
+// main function
 async function seedDatabase() {
     try {
         const uri = process.env.MONGO_URI;
@@ -39,29 +40,10 @@ async function seedDatabase() {
         console.log(`Connessione a MongoDB (${dbName}) riuscita`);
 
         // Rimuovi indici esistenti sulla collezione Order
-        try {
-            await mongoose.connection.db.collection('orders').dropIndexes();
-            console.log('Indici sulla collezione "orders" rimossi (se esistevano).');
-        } catch (err) {
-            console.log('Nessun indice da rimuovere sulla collezione "orders".');
-        }
+        await rmOrderIndex();
 
         //Inserimento piatti del catalogo
-        const meals = loadMealsData();
-        const dishes = meals.map(m => ({
-            externalId: String(m.idMeal || ''),
-            name: m.strMeal || m.name,
-            category: m.strCategory || m.category || 'Altro',
-            area: m.strArea || '',
-            image: m.strMealThumb || '',
-            description: m.strInstructions || '',
-            ingredients: m.ingredients || [],
-            measures: m.measures || [],
-            price: Number(m.price || 10),
-            source: 'catalog'
-        }));
-        const insertedDishes = await Dish.insertMany(dishes);
-        console.log(`Importati ${insertedDishes.length} piatti del catalogo.`);
+        const insertedDishes = await insertDishes();
 
         //Creazione utenti fittizi
         const users = await User.insertMany([
@@ -142,6 +124,36 @@ async function seedDatabase() {
         console.error('Errore durante il seeding:', err);
         process.exit(1);
     }
+
+    async function insertDishes() {
+        const meals = loadMealsData();
+        const dishes = meals.map(m => ({
+            externalId: String(m.idMeal || ''),
+            name: m.strMeal || m.name,
+            category: m.strCategory || m.category || 'Altro',
+            area: m.strArea || '',
+            image: m.strMealThumb || '',
+            description: m.strInstructions || '',
+            ingredients: m.ingredients || [],
+            measures: m.measures || [],
+            price: Number(m.price || 10),
+            source: 'catalog'
+        }));
+        const insertedDishes = await Dish.insertMany(dishes);
+        console.log(`Importati ${insertedDishes.length} piatti del catalogo.`);
+        return insertedDishes;
+    }
+
+    async function rmOrderIndex() {
+        try {
+            await mongoose.connection.db.collection('orders').dropIndexes();
+            console.log('Indici sulla collezione "orders" rimossi (se esistevano).');
+        } catch (err) {
+            console.log('Nessun indice da rimuovere sulla collezione "orders".');
+        }
+    }
 }
+
+
 
 seedDatabase();

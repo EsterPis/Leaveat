@@ -8,7 +8,8 @@
     "dev": "nodemon backend/src/app.js",
     "seed": "node backend/src/utils/seed.js",
     "db:reset": "node backend/scripts/reset-db.js",
-    "db:seed:first": "node backend/scripts/first-run-seed.js"
+    "db:seed:first": "node backend/scripts/first-run-seed.js",
+    "test:run": "node backend/scripts/test-run.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

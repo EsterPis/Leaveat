@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { completeRegistration } = require('../utils/restaurateurService');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { authMiddleware, requireRole } = require('../middleware/auth');
 
 // endpoint principale
 router.post('/restaurateurs/complete-registration',
-  requireAuth,
+  authMiddleware,
   requireRole('RESTAURATEUR'),
   async (req, res) => {
     try {
