@@ -1,5 +1,5 @@
 const API = '/api/lv';
-const token = localStorage.getItem('lv_token'); // settato dopo login
+const token = localStorage.getItem('token'); // settato dopo login
 if(!token){ window.location.href='/login.html'; }
 
 // UI helpers
