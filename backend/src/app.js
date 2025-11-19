@@ -69,7 +69,7 @@ app.use('/api/lv/categories', categoryRoutes);
 app.use('/api/lv', restaurateurRoutes);
 
 //Example protected route: whoami
-app.get('/api/users/me', authMiddleware, async (req, res) => {
+app.get('/api/lv/users/me', authMiddleware, async (req, res) => {
   res.json({ success: true, data: { userId: req.user.userId, email: req.user.email, role: req.user.role } });
 });
 
