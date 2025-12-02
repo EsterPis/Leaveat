@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>Dettagli Piatto - Leaveat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <style>
+    .dish-header-img {
+      height: 350px;
+      object-fit: cover;
+      width: 100%;
+      border-radius: 0 0 20px 20px; /* Arrotonda solo sotto */
+    }
+    .ingredient-pill {
+      background-color: #e9ecef;
+      padding: 5px 12px;
+      border-radius: 20px;
+      margin-right: 5px;
+      margin-bottom: 5px;
+      display: inline-block;
+      font-size: 0.9rem;
+    }
+    .main-card {
+        margin-top: -50px; /* Effetto sovrapposizione sull'immagine header */
+        border: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="#">Leaveat <span class="fw-light">| Scheda Piatto</span></a>
+      <button onclick="window.close()" class="btn btn-outline-light btn-sm ms-auto">Chiudi Scheda</button>
+    </div>
+  </nav>
+
+  <div id="loader" class="text-center mt-5">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-2">Caricamento bontà in corso...</p>
+  </div>
+
+  <div id="content" class="d-none">
+    <img id="dishImg" src="" class="dish-header-img" alt="Foto Piatto">
+
+    <div class="container pb-5">
+      <div class="card main-card p-4">
+        <div class="row">
+          <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-2 mb-2">
+               <span id="dishCategory" class="badge bg-warning text-dark"></span>
+               <span id="dishArea" class="badge bg-info text-dark"></span>
+            </div>
+            
+            <h1 id="dishName" class="display-5 fw-bold mb-4 text-primary"></h1>
+            
+            <h5 class="mb-3"><i class="bi bi-basket"></i> Ingredienti</h5>
+            <div id="ingredientsList" class="mb-4">
+               </div>
+
+            <h5 class="mb-3"><i class="bi bi-card-text"></i> Preparazione / Descrizione</h5>
+            <p id="dishDesc" class="lead text-secondary" style="font-size: 1.1rem; line-height: 1.8;"></p>
+          </div>
+
+          <div class="col-lg-4 border-start">
+             <div class="p-3 bg-light rounded h-100">
+                <h5 class="text-muted mb-4">Informazioni</h5>
+                
+                <p class="mb-2"><strong><i class="bi bi-tag"></i> ID Catalogo:</strong></p>
+                <p id="dishId" class="text-muted small mb-4 font-monospace"></p>
+
+                <p class="mb-2"><strong><i class="bi bi-currency-euro"></i> Prezzo Consigliato:</strong></p>
+                <h3 id="dishPrice" class="text-success fw-bold"></h3>
+                <small class="text-muted d-block mb-4">Il prezzo può variare a discrezione del ristoratore.</small>
+
+                <div class="d-grid">
+                  <button onclick="window.close()" class="btn btn-outline-primary">Torna alla lista</button>
+                </div>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Recupera l'ID dall'URL (?id=...)
+      const params = new URLSearchParams(window.location.search);
+      const dishId = params.get('id');
+
+      if (!dishId) {
+        alert("ID piatto mancante!");
+        return;
+      }
+
+      try {
+        // Usa la tua API Dishes che hai già configurato in app.js
+        // La rotta: app.use('/api/lv/dishes', dishRoutes) -> GET /:id
+        const res = await fetch(`/api/lv/dishes/${dishId}`);
+        const json = await res.json();
+
+        if (!json.success) {
+          throw new Error(json.message || "Errore API");
+        }
+
+        const dish = json.data; // Assumo che l'API restituisca { data: { ... } }
+
+        // 2. Popola il DOM
+        document.getElementById('dishImg').src = dish.imageUrl || dish.image || 'https://via.placeholder.com/800x400?text=No+Image';
+        document.getElementById('dishName').textContent = dish.name;
+        document.getElementById('dishCategory').textContent = dish.category || 'Generico';
+        document.getElementById('dishArea').textContent = dish.area || 'Internazionale';
+        document.getElementById('dishDesc').textContent = dish.description || 'Nessuna descrizione disponibile.';
+        document.getElementById('dishId').textContent = dish.externalId || dish._id;
+        
+        // Gestione prezzo (se presente nel DB bene, altrimenti mostra N/A)
+        const price = dish.price ? `€ ${dish.price.toFixed(2)}` : 'N/A';
+        document.getElementById('dishPrice').textContent = price;
+
+        // Ingredienti
+        const ingrContainer = document.getElementById('ingredientsList');
+        const ingredients = Array.isArray(dish.ingredients) ? dish.ingredients : [];
+        if(ingredients.length > 0) {
+           ingredients.forEach(ing => {
+             const span = document.createElement('span');
+             span.className = 'ingredient-pill';
+             span.textContent = ing;
+             ingrContainer.appendChild(span);
+           });
+        } else {
+           ingrContainer.innerHTML = '<span class="text-muted fst-italic">Nessun ingrediente specificato.</span>';
+        }
+
+        // Mostra contenuto
+        document.getElementById('loader').classList.add('d-none');
+        document.getElementById('content').classList.remove('d-none');
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loader').innerHTML = `
+           <div class="alert alert-danger mx-5">
+             <h4>Errore</h4>
+             <p>Impossibile caricare il piatto. ID non valido o problema server.</p>
+           </div>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>

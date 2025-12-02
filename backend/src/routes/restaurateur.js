@@ -9,7 +9,7 @@ const { authMiddleware, requireRole } = require('../middleware/auth');
 // - un ristorante collegato
 // - il relativo menù (nuovo o importato)
 router.post(
-  '/restaurateurs/complete-registration',
+  '/complete-registration',
   authMiddleware,
   requireRole('RESTAURATEUR'),
   async (req, res) => {

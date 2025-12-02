@@ -26,9 +26,18 @@ const Order = require(path.join(modelsPath, 'Order'));
 // FUNZIONE IMPORT meals.json
 // ================================
 function loadMealsData() {
-  const filePath = path.join(__dirname, '../../data/meals.json');
-  const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  return data.slice(0, 20);
+  const filePath = path.join(__dirname, '../../data/meals.json'); 
+  
+  try {
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    const data = JSON.parse(raw);
+    
+    // Ritorna TUTTI i dati, senza tagliarli
+    return data; 
+  } catch (err) {
+    console.error("Errore lettura meals.json:", err);
+    return [];
+  }
 }
 
 

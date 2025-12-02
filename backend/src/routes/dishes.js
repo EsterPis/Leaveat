@@ -22,17 +22,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/lv/dishes/:id
-router.get('/:id', async (req, res) => {
-  try {
-    const dish = await Dish.findById(req.params.id);
-    if (!dish) return res.status(404).json({ success: false, message: 'Piatto non trovato' });
-    res.json({ success: true, data: dish });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
 // GET /api/lv/dishes/catalog
 // Filtri: name, category, ingredient, maxPrice
 router.get('/catalog', authMiddleware, async (req, res) => {
@@ -51,13 +40,24 @@ router.get('/catalog', authMiddleware, async (req, res) => {
     if (ingredient) query.ingredients = { $regex: ingredient, $options: 'i' };
     if (maxPrice) query.price = { $lte: Number(maxPrice) };
 
-    const dishes = await Dish.find(query).sort({ name: 1 }).limit(100); //limite di 100 piatti per evitare risposte troppo grandi, ordinamento alfabetico
+    const dishes = await Dish.find(query).sort({ name: 1 }); //ordinamento alfabetico
     res.json({ success: true, count: dishes.length, data: dishes });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
+
+// GET /api/lv/dishes/:id
+router.get('/:id', async (req, res) => {
+  try {
+    const dish = await Dish.findById(req.params.id);
+    if (!dish) return res.status(404).json({ success: false, message: 'Piatto non trovato' });
+    res.json({ success: true, data: dish });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
 // POST /api/lv/dishes
 // Solo ristoratore: aggiunge un piatto al proprio menù

@@ -12,6 +12,7 @@ const Dish = require('./models/Dish'); //importa il modello Dish
 const customerRoutes = require('./routes/customers'); //importa le rotte dei clienti
 const categoryRoutes = require('./routes/categories');
 const restaurateurRoutes = require('./routes/restaurateur'); //importa le rotte dei ristoratori
+//const restaurantRoutes = require('./routes/restaurant'); //importa le rotte dei ristoranti
 
 //Funzione per il caricamento automatico dei piatti 
 async function isCatalogEmpty() {
@@ -64,9 +65,10 @@ app.use('/', express.static(path.join(__dirname, '../../frontend')));
 //API routes
 app.use('/api/lv/users', authRoutes);
 app.use('/api/lv/customers', customerRoutes);
+app.use('/api/lv/restaurateurs', restaurateurRoutes);
 app.use('/api/lv/dishes', dishRoutes);
 app.use('/api/lv/categories', categoryRoutes);
-app.use('/api/lv', restaurateurRoutes);
+//app.use('/api/lv/restaurants', restaurantRoutes);
 
 //Example protected route: whoami
 app.get('/api/lv/users/me', authMiddleware, async (req, res) => {
