@@ -60,7 +60,8 @@ async function validateToken(token) {
         if (!response.ok) return null;
 
         const json = await response.json();
-        return json.data; // nel tuo backend i dati stanno in data
+        return json.user; 
+
     } catch (err) {
         console.error("Errore validazione token:", err);
         return null;
@@ -93,7 +94,7 @@ function renderLoggedInNavbar(user) {
       <div class="d-flex align-items-center gap-3">
         <span class="text-white">Ciao, <strong>${user.firstName}</strong></span>
 
-        <a href="/account.html" class="btn btn-outline-light btn-sm" title="Profilo utente">
+        <a href="./account.html" class="btn btn-outline-light btn-sm" title="Profilo utente">
           <i class="bi bi-person-circle"></i>
         </a>
 

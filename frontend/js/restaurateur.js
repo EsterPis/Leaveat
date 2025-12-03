@@ -578,7 +578,7 @@ document.getElementById('finish').onclick = async () => {
     if (res.ok && json.success) {
       showAlert('success', 'Profilo completato! Reindirizzamento...');
       setTimeout(() => {
-        window.location.href = '/dashboard/restaurateur.html';
+        window.location.href = './restaurateur-dashboard.html';
       }, 1500);
     } else {
       showAlert('error', json.message || 'Errore nella procedura.');

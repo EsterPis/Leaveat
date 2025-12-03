@@ -1,13 +1,10 @@
-/**
- * Script: first-run-seed.js
- */
-
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', 'src', '.env') });
 console.log('MONGO_URI:', process.env.MONGO_URI);
 
 const mongoose = require('mongoose');
 const fs = require('fs');
+const bcrypt = require('bcryptjs');
 
 // Percorso modelli
 const modelsPath = path.join(__dirname, '..', 'src', 'models');
@@ -183,12 +180,19 @@ async function seedDatabase() {
     }
 
     async function createUsers() {
-        return await User.insertMany([
+        const rawUsers = [
             { firstName: 'Mario', lastName: 'Rossi', email: 'mario@demo.com', phoneNumber: '1111111111', password: 'password1', role: 'CUSTOMER' },
             { firstName: 'Luisa', lastName: 'Bianchi', email: 'luisa@demo.com', phoneNumber: '2222222222', password: 'password2', role: 'CUSTOMER' },
             { firstName: 'Carlo', lastName: 'Neri', email: 'carlo@demo.com', phoneNumber: '4444444444', password: 'password4', role: 'RESTAURATEUR' },
             { firstName: 'Anna', lastName: 'Russo', email: 'anna@demo.com', phoneNumber: '5555555555', password: 'password5', role: 'RESTAURATEUR' }
-        ]);
+        ];
+
+        for(let user of rawUsers){
+            const salt = await bcrypt.genSalt(10);
+            user.password =  await bcrypt.hash(user.password, salt);
+        }
+
+        return await User.insertMany(rawUsers);
     }
 }
 

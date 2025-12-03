@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaveat - Il mio Profilo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/style.css"> </head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">Leaveat</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 class="mb-4">Il mio Profilo</h2>
+
+        <div id="alertMessage" class="alert d-none" role="alert"></div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-person-circle"></i> Dati Personali
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Nome:</strong> <span id="lblFirstName">...</span></p>
+                        <p><strong>Cognome:</strong> <span id="lblLastName">...</span></p>
+                        <p><strong>Email:</strong> <span id="lblEmail">...</span></p>
+                        <p><strong>Telefono:</strong> <span id="lblPhone">...</span></p>
+                        
+                        <button class="btn btn-outline-primary mt-3" data-bs-toggle="modal" data-bs-target="#editModal">
+                            <i class="bi bi-pencil"></i> Modifica Dati
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                
+                <div id="customer-section" class="card h-100 shadow-sm d-none">
+                    <div class="card-header bg-success text-white">
+                        <i class="bi bi-basket"></i> Preferenze Cliente
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Metodo di Pagamento:</strong> <span id="lblPayment">...</span></p>
+                        <p><strong>Categorie Preferite:</strong></p>
+                        <ul id="listPreferences">
+                            </ul>
+                    </div>
+                </div>
+
+                <div id="restaurateur-section" class="card h-100 shadow-sm d-none">
+                    <div class="card-header bg-warning text-dark">
+                        <i class="bi bi-shop"></i> Area Ristoratore
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="text-start"><strong>Partita IVA:</strong> <span id="lblVat">...</span></p>
+                        <p class="text-start"><strong>IBAN:</strong> <span id="lblIban">...</span></p>
+                        <hr>
+                        <p class="card-text">Gestisci i tuoi ristoranti, menù e ordini.</p>
+                        <a href="restaurateur-dashboard.html" class="btn btn-warning w-100 py-3">
+                            <i class="bi bi-speedometer2 fs-4"></i><br>
+                            Vai alla Dashboard Ristoratore
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card border-danger mt-4">
+            <div class="card-body">
+                <h5 class="card-title text-danger">Zona Pericolo</h5>
+                <p class="card-text">L'eliminazione dell'account è irreversibile.</p>
+                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                    <i class="bi bi-trash"></i> Elimina Account
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Modifica Dati</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <div class="mb-3">
+                            <label for="editFirstName" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="editFirstName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editLastName" class="form-label">Cognome</label>
+                            <input type="text" class="form-control" id="editLastName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPhone" class="form-label">Telefono</label>
+                            <input type="tel" class="form-control" id="editPhone" required>
+                        </div>
+                        </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" onclick="updateUser()">Salva Modifiche</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">Conferma Eliminazione</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="deleteWarningText">Sei sicuro di voler eliminare il tuo account?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-danger" onclick="deleteAccount()">Sì, elimina tutto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/account.js"></script>
+</body>
+</html>

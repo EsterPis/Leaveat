@@ -51,39 +51,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// GET /api/lv/restaurants/:id
-// Dettaglio singolo ristorante + Menù popolato
-router.get('/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        // Cerco il ristorante e "popolo" (carico i dati completi) del menù
-        // e dentro il menù popolo anche i piatti (dishIds)
-        const restaurant = await Restaurant.findById(id)
-            .populate({
-                path: 'menuId',
-                populate: { path: 'dishIds' } // Carica i dettagli dei piatti
-            });
-
-        if (!restaurant) {
-            return res.status(404).json({ success: false, message: 'Ristorante non trovato' });
-        }
-
-        res.status(200).json({
-            success: true,
-            data: restaurant
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Errore server' });
-    }
-});
-
-
-/* ==============================================
- * ROTTE PROTETTE (Solo Restaurateur)
- * ============================================== */
-
 // GET /api/lv/restaurants/my-restaurants
 // Restituisce SOLO i ristoranti dell'utente loggato (per la dashboard)
 router.get('/my-restaurants', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
@@ -106,6 +73,33 @@ router.get('/my-restaurants', authMiddleware, requireRole('RESTAURATEUR'), async
             data: myRestaurants
         });
 
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Errore server' });
+    }
+});
+// GET /api/lv/restaurants/:id
+// Dettaglio singolo ristorante + Menù popolato
+router.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Cerco il ristorante e "popolo" (carico i dati completi) del menù
+        // e dentro il menù popolo anche i piatti (dishIds)
+        const restaurant = await Restaurant.findById(id)
+            .populate({
+                path: 'menuId',
+                populate: { path: 'dishIds' } // Carica i dettagli dei piatti
+            });
+
+        if (!restaurant) {
+            return res.status(404).json({ success: false, message: 'Ristorante non trovato' });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: restaurant
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Errore server' });

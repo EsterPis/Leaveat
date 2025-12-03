@@ -6,13 +6,15 @@ const path = require('path'); //gestione dei percorsi
 const fs = require('fs'); //lettura o scrittura di file --> per il caricamento automatico dei piatti
 
 const authRoutes = require('./routes/auth'); //importa le rotte di autenticazione
+const customerRoutes = require('./routes/customers'); //importa le rotte dei clienti
+const restaurateurRoutes = require('./routes/restaurateur'); //importa le rotte dei ristoratori
+const restaurantRoutes = require('./routes/restaurant'); //importa le rotte dei ristoranti
 const dishRoutes = require('./routes/dishes'); //importa le rotte dei piatti
+const categoryRoutes = require('./routes/categories');
+const orderRoutes = require('./routes/orders'); //importa le rotte degli ordini
+
 const { authMiddleware } = require('./middleware/auth'); //importa il middleware di autenticazione
 const Dish = require('./models/Dish'); //importa il modello Dish
-const customerRoutes = require('./routes/customers'); //importa le rotte dei clienti
-const categoryRoutes = require('./routes/categories');
-const restaurateurRoutes = require('./routes/restaurateur'); //importa le rotte dei ristoratori
-//const restaurantRoutes = require('./routes/restaurant'); //importa le rotte dei ristoranti
 
 //Funzione per il caricamento automatico dei piatti 
 async function isCatalogEmpty() {
@@ -66,14 +68,10 @@ app.use('/', express.static(path.join(__dirname, '../../frontend')));
 app.use('/api/lv/users', authRoutes);
 app.use('/api/lv/customers', customerRoutes);
 app.use('/api/lv/restaurateurs', restaurateurRoutes);
+app.use('/api/lv/restaurants', restaurantRoutes);
 app.use('/api/lv/dishes', dishRoutes);
 app.use('/api/lv/categories', categoryRoutes);
-//app.use('/api/lv/restaurants', restaurantRoutes);
-
-//Example protected route: whoami
-app.get('/api/lv/users/me', authMiddleware, async (req, res) => {
-  res.json({ success: true, data: { userId: req.user.userId, email: req.user.email, role: req.user.role } });
-});
+app.use('/api/lv/orders', orderRoutes);
 
 const PORT = process.env.PORT || 3000;
 
