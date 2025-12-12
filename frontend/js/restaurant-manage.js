@@ -1,5 +1,5 @@
 //Preleva parametri URL
-const urlParams = new URLSearchParams(window.location.search); 
+const urlParams = new URLSearchParams(window.location.search);
 const restaurantId = urlParams.get('id');
 const token = localStorage.getItem('token');
 
@@ -35,7 +35,7 @@ async function loadRestaurantDetails() {
 
         // 1. Popola Header e Info Tab
         document.getElementById('nav-restaurant-name').textContent = r.displayName;
-        
+
         const infoHtml = `
             <div class="col-md-6">
                 <p><strong>Nome Legale:</strong> ${r.legalName}</p>
@@ -54,7 +54,6 @@ async function loadRestaurantDetails() {
         // 2. Popola Tab Menù
         const tbody = document.getElementById('menu-table-body');
         tbody.innerHTML = '';
-
         if (r.menuId && r.menuId.dishIds && r.menuId.dishIds.length > 0) {
             r.menuId.dishIds.forEach(dish => {
                 const tr = document.createElement('tr');
@@ -63,21 +62,26 @@ async function loadRestaurantDetails() {
                     <td><span class="badge bg-light text-dark border">${dish.category}</span></td>
                     <td>€ ${dish.price.toFixed(2)}</td>
                     <td>
-                        <button class="btn btn-sm btn-info text-white" title="Modifica Piatto">
+                        <button class="btn btn-sm btn-warning text-white btn-edit-dish me-2" data-dish-id="${dish._id}" title="Modifica Piatto">
                             <i class="fas fa-pencil-alt"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger text-white btn-delete-dish" data-dish-id="${dish._id}" title="Elimina Piatto">
+                            <i class="fas fa-trash-alt"></i>
                         </button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
-        } else {
+            // Dopo aver popolato la tabella, leghiamo gli eventi dinamici
+            bindMenuEvents(); 
+        } else{
             tbody.innerHTML = '<tr><td colspan="4" class="text-center">Nessun piatto nel menù.</td></tr>';
         }
 
-    } catch (err) {
-        console.error(err);
-        alert('Errore caricamento dati ristorante: ' + err.message);
-    }
+} catch (err) {
+    console.error(err);
+    alert('Errore caricamento dati ristorante: ' + err.message);
+}
 }
 
 // FUNZIONE 2: Carica e Gestisci Ordini
@@ -152,7 +156,7 @@ async function loadOrders() {
 
 // FUNZIONE 3: Aggiorna Stato Ordine
 async function updateStatus(orderId, newStatus) {
-    if(!confirm(`Cambiare stato in ${newStatus}?`)) return;
+    if (!confirm(`Cambiare stato in ${newStatus}?`)) return;
 
     try {
         const response = await fetch(`/api/lv/orders/${orderId}/status`, {
@@ -172,5 +176,224 @@ async function updateStatus(orderId, newStatus) {
     } catch (err) {
         console.error(err);
         alert('Errore di rete');
+    }
+}
+
+// ==========================================
+// FUNZIONI PER GESTIRE I PULSANTI
+// ==========================================
+
+// 1. Modifica Dati Ristorante (pulsante grande in Info Tab)
+const btnEditInfo = document.getElementById('btn-edit-info');
+if (btnEditInfo) {
+    btnEditInfo.addEventListener('click', () => {
+        // Reindirizza a una pagina dedicata per la modifica dei dati del ristorante
+        window.location.href = `edit-restaurant-info.html?id=${restaurantId}`;
+    });
+}
+
+// 2. Aggiungi Piatto (pulsante grande in Menù Tab)
+// Questo pulsante ora apre il Modale (il codice del modale deve essere nell'HTML)
+const btnAddDish = document.getElementById('btn-add-dish');
+if (btnAddDish) {
+    btnAddDish.addEventListener('click', () => {
+        // Usa la classe Bootstrap per aprire il modale
+        const addDishModal = new bootstrap.Modal(document.getElementById('addDishModal'));
+        addDishModal.show();
+    });
+}
+
+
+// 3. Gestione invio form (POST /api/lv/dishes)
+const addDishForm = document.getElementById('add-dish-form');
+
+if (addDishForm) {
+    addDishForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('dish-name').value;
+        const category = document.getElementById('dish-category').value;
+        const price = document.getElementById('dish-price').value;
+        const ingredientsStr = document.getElementById('dish-ingredients').value;
+        const description = document.getElementById('dish-description').value;
+
+        // Converto la stringa di ingredienti in un array
+        const ingredients = ingredientsStr.split(',').map(i => i.trim()).filter(i => i.length > 0);
+
+        if (ingredients.length === 0) {
+            alert('Inserisci almeno un ingrediente, separando con una virgola.');
+            return;
+        }
+
+        const payload = {
+            name: name,
+            category: category,
+            price: parseFloat(price),
+            ingredients: ingredients,
+            description: description,
+            restaurantId: restaurantId // Variabile globale definita in cima al file
+        };
+
+        try {
+            const response = await fetch('/api/lv/dishes', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const json = await response.json();
+
+            if (response.ok) {
+                alert('Piatto aggiunto con successo!');
+
+                // Chiudi il modale
+                const modalElement = document.getElementById('addDishModal');
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+
+                addDishForm.reset();
+                loadRestaurantDetails(); // Ricarica la tabella per mostrare il nuovo piatto
+            } else {
+                alert('Errore: ' + (json.message || 'Errore sconosciuto.'));
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Errore di comunicazione col server.');
+        }
+    });
+}
+
+
+// FUNZIONE 4: Collega Eventi ai Pulsanti dei Piatti (chiamata da loadRestaurantDetails)
+function bindMenuEvents() {
+    // Gestione click per la modifica del singolo piatto
+    document.querySelectorAll('.btn-edit-dish').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const dishId = e.currentTarget.getAttribute('data-dish-id');
+            // Reindirizza a una pagina di modifica piatto, passando l'ID del piatto
+            // Dovrai creare la pagina edit-dish.html
+            window.location.href = `edit-dish.html?id=${restaurantId}&dishId=${dishId}`;
+        });
+    });
+
+    // Gestione click per l'eliminazione del singolo piatto
+    document.querySelectorAll('.btn-delete-dish').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const dishId = e.currentTarget.getAttribute('data-dish-id');
+            if (confirm(`Sei sicuro di voler eliminare il piatto? (ID: ${dishId})`)) {
+                deleteDish(dishId); // Chiama la funzione API
+            }
+        });
+    });
+}
+
+// FUNZIONE 5: Eliminazione Piatto (Richiesta DELETE /api/lv/dishes/:id)
+async function deleteDish(dishId) {
+    try {
+        const response = await fetch(`/api/lv/dishes/${dishId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            alert('Piatto eliminato con successo!');
+            loadRestaurantDetails(); // Ricarica la tabella dopo l'eliminazione
+        } else {
+            const json = await response.json();
+            alert('Errore nell\'eliminazione del piatto: ' + (json.message || 'Errore sconosciuto.'));
+        }
+    } catch (error) {
+        console.error('Errore di comunicazione: ', error);
+        alert('Errore di comunicazione col server.');
+    }
+}
+// --- GESTIONE PULSANTE MODIFICA MENU (Punto 3) ---
+const btnEditMenu = document.getElementById('btn-edit-menu'); // Assicurati che l'ID nell'HTML sia questo
+if (btnEditMenu) {
+    btnEditMenu.addEventListener('click', () => {
+        const modal = new bootstrap.Modal(document.getElementById('addDishModal'));
+        modal.show();
+    });
+}
+
+// --- GESTIONE RICERCA CATALOGO (Punto 4) ---
+const btnSearchCatalog = document.getElementById('btn-search-catalog');
+if (btnSearchCatalog) {
+    btnSearchCatalog.addEventListener('click', async () => {
+        const query = document.getElementById('catalog-search-input').value;
+        const resultsContainer = document.getElementById('catalog-results');
+        
+        resultsContainer.innerHTML = '<div class="spinner-border spinner-border-sm text-primary"></div> Caricamento...';
+
+        try {
+            // Chiama la rotta catalog esistente
+            const res = await fetch(`/api/lv/dishes/catalog?name=${query}`, {
+                 headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const json = await res.json();
+            
+            resultsContainer.innerHTML = '';
+            
+            if (!json.data || json.data.length === 0) {
+                resultsContainer.innerHTML = '<p class="text-center">Nessun risultato.</p>';
+                return;
+            }
+
+            json.data.forEach(dish => {
+                const btn = document.createElement('button');
+                btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                btn.innerHTML = `
+                    <div>
+                        <strong>${dish.name}</strong> <span class="badge bg-light text-dark border">${dish.category}</span>
+                        <div class="small text-muted">${dish.ingredients.slice(0, 3).join(', ')}...</div>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">Importa</span>
+                `;
+                // Al click importiamo
+                btn.addEventListener('click', () => importDish(dish._id));
+                resultsContainer.appendChild(btn);
+            });
+        } catch (err) {
+            resultsContainer.innerHTML = '<p class="text-danger">Errore ricerca.</p>';
+        }
+    });
+}
+
+async function importDish(catalogDishId) {
+    const price = prompt("Inserisci il prezzo di vendita per questo piatto (es. 12.50):");
+    if (!price) return;
+
+    try {
+        const response = await fetch('/api/lv/dishes/import', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                catalogDishId: catalogDishId,
+                restaurantId: restaurantId, // Variabile globale dalla pagina
+                price: price
+            })
+        });
+
+        const json = await response.json();
+        if (json.success) {
+            alert('Piatto importato!');
+            loadRestaurantDetails(); // Ricarica la tabella
+            // Opzionale: chiudi modale
+        } else {
+            alert('Errore: ' + json.message);
+        }
+    } catch (err) {
+        alert('Errore di comunicazione');
     }
 }

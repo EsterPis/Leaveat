@@ -1,12 +1,9 @@
-// URL base delle API (modifica se necessario)
 const API_URL = '/api/lv';
 
-// Funzione eseguita al caricamento della pagina
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
-
     if (!token) {
-        window.location.href = 'login.html'; // Se non loggato, via al login
+        window.location.href = 'login.html';
         return;
     }
 

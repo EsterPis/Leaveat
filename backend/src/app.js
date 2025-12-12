@@ -66,11 +66,11 @@ app.use('/', express.static(path.join(__dirname, '../../frontend')));
 
 //API routes
 app.use('/api/lv/users', authRoutes);
+app.use('/api/lv/categories', categoryRoutes);
 app.use('/api/lv/customers', customerRoutes);
 app.use('/api/lv/restaurateurs', restaurateurRoutes);
 app.use('/api/lv/restaurants', restaurantRoutes);
 app.use('/api/lv/dishes', dishRoutes);
-app.use('/api/lv/categories', categoryRoutes);
 app.use('/api/lv/orders', orderRoutes);
 
 const PORT = process.env.PORT || 3000;

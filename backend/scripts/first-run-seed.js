@@ -118,7 +118,6 @@ async function seedDatabase() {
     }
 
     console.log(`Creati ${createdRestaurants.length} ristoranti con menu.`);
-
     // ================================
     // Ordini fittizi
     // ================================
@@ -128,14 +127,30 @@ async function seedDatabase() {
     for (let i = 0; i < 5; i++) {
       const randomCustomer = customers[Math.floor(Math.random() * customers.length)];
       const randomRestaurant = createdRestaurants[Math.floor(Math.random() * createdRestaurants.length)];
+      
+      // Seleziono 3 piatti a caso
       const randomDishes = insertedDishes.sort(() => 0.5 - Math.random()).slice(0, 3);
+
+      // Calcolo il totale
+      const calculatedTotal = randomDishes.reduce((sum, d) => sum + d.price, 0);
 
       const order = await Order.create({
         customerId: randomCustomer.userId,
         restaurantId: randomRestaurant._id,
-        mealIds: randomDishes.map(d => d._id),
-        price: randomDishes.reduce((sum, d) => sum + d.price, 0)
+        
+        // CORREZIONE 1: Struttura items (non mealIds)
+        items: randomDishes.map(d => ({
+            dishId: d._id,
+            quantity: 1 
+        })),
+        totalPrice: calculatedTotal, 
+        
+        status: 'ORDINATO'
       });
+
+      // Aggiungo l'ordine all'array del ristorante
+      randomRestaurant.orderIds.push(order._id);
+      await randomRestaurant.save();
 
       sampleOrders.push(order);
     }
@@ -147,7 +162,7 @@ async function seedDatabase() {
     process.exit(0);
 
   } catch (err) {
-    console.error('Errore durante il seeding:', err);
+      console.error('Errore durante il seeding:', err);
     process.exit(1);
   }
 

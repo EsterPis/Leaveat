@@ -79,30 +79,39 @@ router.get('/my-restaurants', authMiddleware, requireRole('RESTAURATEUR'), async
     }
 });
 // GET /api/lv/restaurants/:id
-// Dettaglio singolo ristorante + Menù popolato
-router.get('/:id', async (req, res) => {
+// Dettaglio singolo ristorante + Menù popolato (accesso privato per gestoione)
+router.get('/:id', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
     try {
-        const { id } = req.params;
+        const restaurantId = req.params.id;
+        const userId = req.user.id || req.user.userId;
 
-        // Cerco il ristorante e "popolo" (carico i dati completi) del menù
-        // e dentro il menù popolo anche i piatti (dishIds)
-        const restaurant = await Restaurant.findById(id)
+        // 1. Verifica la proprietà (Ownership Check)
+        // È fondamentale assicurarsi che il ristoratore stia gestendo il proprio ristorante
+        const isOwner = await checkOwnership(userId, restaurantId);
+        if (!isOwner) {
+            return res.status(403).json({ success: false, message: 'Non sei autorizzato a gestire questo ristorante.' });
+        }
+        
+        // 2. Recupero del Ristorante CON POPOLAMENTO NIDIFICATO
+        const restaurant = await Restaurant.findById(restaurantId)
             .populate({
-                path: 'menuId',
-                populate: { path: 'dishIds' } // Carica i dettagli dei piatti
-            });
+                path: 'menuId',       // PRIMO LIVELLO: Popola il riferimento a 'Menu' nel documento Restaurant
+                populate: {
+                    path: 'dishIds'   // SECONDO LIVELLO: Popola l'array di 'Dish' all'interno del documento Menu
+                }
+            })
+            .exec(); // Esegue la query Mongoose
 
         if (!restaurant) {
-            return res.status(404).json({ success: false, message: 'Ristorante non trovato' });
+            return res.status(404).json({ success: false, message: "Ristorante non trovato." });
         }
 
-        res.status(200).json({
-            success: true,
-            data: restaurant
-        });
+        // 3. Risposta al Frontend (restaurant-manage.js)
+        return res.json({ success: true, data: restaurant });
+
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Errore server' });
+        console.error("Errore nel recupero del ristorante:", err);
+        return res.status(500).json({ success: false, message: 'Errore interno del server durante il recupero del ristorante.' });
     }
 });
 

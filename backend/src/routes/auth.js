@@ -1,26 +1,22 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
-
-// Importiamo il middleware di autenticazione e i modelli
-const { authMiddleware } = require('../middleware/auth'); 
+//middleware
+const { authMiddleware } = require('../middleware/auth');
+//models
 const User = require('../models/User');
 const Customer = require('../models/Customer');
 const Restaurateur = require('../models/Restaurateur');
 const Restaurant = require('../models/Restaurant');
 const Menu = require('../models/Menu');
 
-// ... (tieni pure la funzione signToken e le rotte /register e /login come erano prima) ...
 function signToken(user) {
   const payload = { userId: user._id.toString(), email: user.email, role: user.role, firstName: user.firstName };
-  // Assicurati che process.env.JWT_SECRET corrisponda a quello usato nel middleware
   const secret = process.env.JWT_SECRET || 'devsecret'; 
   return jwt.sign(payload, secret, { expiresIn: '24h' });
 }
 
 router.post('/register', async (req, res) => {
-    // ... (Il tuo codice di register esistente va bene qui) ...
-    // Per brevità non lo ricopio, mantieni quello che hai nel file caricato
     try {
         const { firstName, lastName, email, phoneNumber, password, role } = req.body;
         if (!email || !password || !firstName || !lastName || !phoneNumber ) return res.status(400).json({ success: false, message: 'Compilare tutti i campi' });
@@ -32,11 +28,9 @@ router.post('/register', async (req, res) => {
     
         const user = await User.create({ firstName, lastName, email, phoneNumber, password, role: role || 'CUSTOMER' });
         
-        // Creiamo anche il profilo vuoto associato
         if (user.role === 'CUSTOMER') {
             await Customer.create({ userId: user._id });
         } else if (user.role === 'RESTAURATEUR') {
-             // Il ristoratore completerà i dati dopo, ma creiamo il record base
             await Restaurateur.create({ 
                 userId: user._id, 
                 VATNumber: "DA_COMPLETARE_" + user._id, // Placeholder temporaneo
@@ -71,14 +65,9 @@ router.post('/login', async (req, res) => {
       }
 });
 
-// ------------------------------------------------------------------
-// NUOVE ROTTE PER LA GESTIONE ACCOUNT (/api/lv/users/me)
-// ------------------------------------------------------------------
 
-// 1. GET /me - Recupera profilo completo
 router.get('/me', authMiddleware, async (req, res) => {
     try {
-        // Recupera dati User (esclude la password)
         const user = await User.findById(req.user.userId).select('-password');
         if (!user) return res.status(404).json({ success: false, message: 'Utente non trovato' });
 
