@@ -38,16 +38,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const dish = json.data;
-        
+
         // Popola il form con i dati ricevuti
         document.getElementById('dish-name').value = dish.name;
         document.getElementById('dish-price').value = dish.price.toFixed(2);
         document.getElementById('dish-category').value = dish.category || '';
         document.getElementById('dish-description').value = dish.description || '';
-        
+
         // Converti l'array di ingredienti in una stringa separata da virgole
         document.getElementById('dish-ingredients').value = dish.ingredients ? dish.ingredients.join(', ') : '';
-        
+
         // Aggiorna il titolo della pagina
         dishTitle.textContent = `Modifica Piatto: ${dish.name}`;
 
@@ -65,10 +65,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         errorMessage.style.display = 'none';
-        
+
         const ingredientsStr = document.getElementById('dish-ingredients').value;
         const ingredients = ingredientsStr.split(',').map(i => i.trim()).filter(i => i.length > 0);
-        
+
         // Raccogli i dati aggiornati dal form
         const updatedData = {
             name: document.getElementById('dish-name').value,
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (response.ok) {
                 alert('Piatto aggiornato con successo!');
                 // Torna alla pagina di gestione del ristorante
-                window.location.href = `restaurant-manage.html?id=${restaurantId}`; 
+                window.location.href = `restaurant-manage.html?id=${restaurantId}`;
             } else {
                 displayError(json.message || 'Errore durante l\'aggiornamento.');
             }
@@ -106,6 +106,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 4. Bottone Annulla
     document.getElementById('btn-cancel').addEventListener('click', () => {
         // Torna alla pagina di gestione del ristorante (Menù)
-        window.location.href = `restaurant-manage.html?id=${restaurantId}&tab=menu`; 
+        window.location.href = `restaurant-manage.html?id=${restaurantId}&tab=menu`;
     });
+    
+    async function populateCategories(selectedCategory = null) {
+        const categorySelect = document.getElementById('dish-category');
+        categorySelect.innerHTML = '<option value="" selected disabled>Caricamento categorie...</option>';
+
+        try {
+            // Usiamo l'endpoint corretto
+            const response = await fetch('/api/lv/categories/');
+
+            if (!response.ok) {
+                throw new Error('Errore nel recupero delle categorie.');
+            }
+
+            const json = await response.json();
+
+            // Dato che la tua rotta invia { success: true, data: categories }
+            // 'categories' sarà l'array di stringhe
+            const categories = json.data || [];
+
+            categorySelect.innerHTML = '<option value="" disabled>Seleziona una categoria</option>';
+
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                // Rendiamo la visualizzazione più bella (es: PASTA -> Pasta)
+                option.textContent = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+
+                if (selectedCategory && category === selectedCategory) {
+                    option.selected = true;
+                }
+                categorySelect.appendChild(option);
+            });
+
+        } catch (error) {
+            console.error('Errore populateCategories:', error);
+            categorySelect.innerHTML = '<option value="" selected disabled>Errore Caricamento</option>';
+        }
+    }
 });

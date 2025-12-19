@@ -315,14 +315,6 @@ async function deleteDish(dishId) {
         alert('Errore di comunicazione col server.');
     }
 }
-// --- GESTIONE PULSANTE MODIFICA MENU (Punto 3) ---
-const btnEditMenu = document.getElementById('btn-edit-menu'); // Assicurati che l'ID nell'HTML sia questo
-if (btnEditMenu) {
-    btnEditMenu.addEventListener('click', () => {
-        const modal = new bootstrap.Modal(document.getElementById('addDishModal'));
-        modal.show();
-    });
-}
 
 // --- GESTIONE RICERCA CATALOGO (Punto 4) ---
 const btnSearchCatalog = document.getElementById('btn-search-catalog');
