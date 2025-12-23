@@ -5,6 +5,8 @@ const cors = require('cors'); //permette al frontend di comunicare con il backen
 const path = require('path'); //gestione dei percorsi
 const fs = require('fs'); //lettura o scrittura di file --> per il caricamento automatico dei piatti
 
+const { authMiddleware } = require('./middleware/auth'); //importa il middleware di autenticazione
+
 const authRoutes = require('./routes/auth'); //importa le rotte di autenticazione
 const customerRoutes = require('./routes/customers'); //importa le rotte dei clienti
 const restaurateurRoutes = require('./routes/restaurateur'); //importa le rotte dei ristoratori
@@ -63,6 +65,9 @@ app.use(express.urlencoded({ extended: true })); //permette di leggere i dati da
 
 //Serve frontend static files
 app.use('/', express.static(path.join(__dirname, '../../frontend')));
+
+//----------------IMMAGINE PROVVISORIA----------------
+app.use('/data', express.static(path.join(__dirname, '../../data'))); //permette di accedere alla cartella data per le immagini caricate
 
 //API routes
 app.use('/api/lv/users', authRoutes);
