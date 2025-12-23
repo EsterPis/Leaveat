@@ -363,6 +363,11 @@ async function importDish(catalogDishId) {
     const price = prompt("Inserisci il prezzo di vendita per questo piatto (es. 12.50):");
     if (!price) return;
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentRestaurantId = urlParams.get('id');
+
+    console.log("DEBUG FRONTEND - Invio importazione per ristorante:", currentRestaurantId);
+
     try {
         const response = await fetch('/api/lv/dishes/import', {
             method: 'POST',
@@ -372,8 +377,8 @@ async function importDish(catalogDishId) {
             },
             body: JSON.stringify({
                 catalogDishId: catalogDishId,
-                restaurantId: restaurantId, // Variabile globale dalla pagina
-                price: price
+                restaurantId: currentRestaurantId, // Variabile globale dalla pagina
+                price: parseFloat(price)
             })
         });
 

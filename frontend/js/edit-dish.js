@@ -32,17 +32,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         const json = await response.json();
-
         if (!response.ok) {
             throw new Error(json.message || 'Errore durante il recupero del piatto.');
         }
 
         const dish = json.data;
 
+        await populateCategories(dish.category);
         // Popola il form con i dati ricevuti
         document.getElementById('dish-name').value = dish.name;
         document.getElementById('dish-price').value = dish.price.toFixed(2);
-        document.getElementById('dish-category').value = dish.category || '';
+        document.getElementById('dish-category').value = dish.category;
         document.getElementById('dish-description').value = dish.description || '';
 
         // Converti l'array di ingredienti in una stringa separata da virgole
@@ -108,42 +108,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Torna alla pagina di gestione del ristorante (Menù)
         window.location.href = `restaurant-manage.html?id=${restaurantId}&tab=menu`;
     });
-    
+
     async function populateCategories(selectedCategory = null) {
         const categorySelect = document.getElementById('dish-category');
-        categorySelect.innerHTML = '<option value="" selected disabled>Caricamento categorie...</option>';
+        // Pulizia iniziale
+        categorySelect.innerHTML = '<option value="" selected disabled>Caricamento...</option>';
 
         try {
-            // Usiamo l'endpoint corretto
-            const response = await fetch('/api/lv/categories/');
-
-            if (!response.ok) {
-                throw new Error('Errore nel recupero delle categorie.');
-            }
-
+            const response = await fetch('/api/lv/categories');
             const json = await response.json();
 
-            // Dato che la tua rotta invia { success: true, data: categories }
-            // 'categories' sarà l'array di stringhe
-            const categories = json.data || [];
-
-            categorySelect.innerHTML = '<option value="" disabled>Seleziona una categoria</option>';
-
-            categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category;
-                // Rendiamo la visualizzazione più bella (es: PASTA -> Pasta)
-                option.textContent = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
-
-                if (selectedCategory && category === selectedCategory) {
-                    option.selected = true;
-                }
-                categorySelect.appendChild(option);
-            });
-
+            if (json.success && Array.isArray(json.data)) {
+                categorySelect.innerHTML = '<option value="" disabled>Seleziona una categoria</option>';
+                json.data.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
+                    if (selectedCategory && cat === selectedCategory) option.selected = true;
+                    categorySelect.appendChild(option);
+                });
+            }
         } catch (error) {
-            console.error('Errore populateCategories:', error);
-            categorySelect.innerHTML = '<option value="" selected disabled>Errore Caricamento</option>';
+            console.error("Errore popolamento categorie:", error);
         }
     }
 });

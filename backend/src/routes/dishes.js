@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose'); 
+const mongoose = require('mongoose');
 const Dish = require('../models/Dish');
 const Restaurateur = require('../models/Restaurateur');
-const Menu = require('../models/Menu'); 
-const Restaurant = require('../models/Restaurant'); 
+const Menu = require('../models/Menu');
+const Restaurant = require('../models/Restaurant');
 const { authMiddleware } = require('../middleware/auth');
 
 // GET /api/lv/dishes - 
@@ -53,10 +53,23 @@ router.get('/catalog', authMiddleware, async (req, res) => {
 
 
 // GET /api/lv/dishes/:id
+/*router.get('/:id', async (req, res) => {
+  try {
+    const dish = await Dish.findById(req.params.id);
+    if (!dish) return res.status(404).json({ success: false, message: 'Piatto non trovato' });
+    res.json({ success: true, data: dish });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});*/
 router.get('/:id', async (req, res) => {
   try {
     const dish = await Dish.findById(req.params.id);
     if (!dish) return res.status(404).json({ success: false, message: 'Piatto non trovato' });
+
+    console.log("DEBUG GET - Piatto trovato:", dish.name);
+    console.log("DEBUG GET - restaurantId del piatto:", dish.restaurantId);
+
     res.json({ success: true, data: dish });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -96,7 +109,7 @@ router.post('/', authMiddleware, async (req, res) => {
     // 4. Creiamo il Piatto
     const newDish = new Dish({
       ...req.body,           // name, price, ingredients, description...
-      restaurantId: restaurant._id, 
+      restaurantId: restaurant._id,
       source: 'restaurant'   // Importante per distinguerlo da quelli del catalogo
     });
 
@@ -106,8 +119,8 @@ router.post('/', authMiddleware, async (req, res) => {
     // 5. AGGIORNAMENTO FONDAMENTALE DEL MENU
     // Aggiungiamo l'ID del nuovo piatto all'array dishIds del Menù collegato
     await Menu.findByIdAndUpdate(
-      restaurant.menuId, 
-      { $push: { dishIds: newDish._id } }, 
+      restaurant.menuId,
+      { $push: { dishIds: newDish._id } },
       { session }
     );
 
@@ -121,7 +134,7 @@ router.post('/', authMiddleware, async (req, res) => {
     // Se qualcosa va storto, annulliamo tutto
     await session.abortTransaction();
     session.endSession();
-    
+
     // Gestione status code
     const statusCode = err.message.includes('Accesso negato') ? 403 : 400;
     res.status(statusCode).json({ success: false, message: err.message });
@@ -129,116 +142,157 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 router.post('/import', authMiddleware, async (req, res) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    try {
-        if (req.user.role !== 'RESTAURATEUR') throw new Error('Accesso negato');
+  try {
+    if (req.user.role !== 'RESTAURATEUR') throw new Error('Accesso negato');
 
-        const { catalogDishId, price, restaurantId } = req.body;
+    const { catalogDishId, price, restaurantId } = req.body;
+    console.log("DEBUG IMPORT - Ricevuto restaurantId:", restaurantId);
 
-        // 1. Verifica che il ristorante appartenga al ristoratore loggato
-        const restaurateur = await Restaurateur.findOne({ userId: req.user.userId || req.user.id });
-        if (!restaurateur || !restaurateur.restaurantIds.map(String).includes(restaurantId)) {
-            throw new Error('Non sei autorizzato a gestire questo ristorante');
-        }
-
-        // 2. Trova il piatto originale nel catalogo
-        const originalDish = await Dish.findById(catalogDishId).session(session);
-        if (!originalDish) throw new Error('Piatto catalogo non trovato');
-
-        // 3. Trova il Ristorante per avere il menuId
-        const restaurant = await Restaurant.findById(restaurantId).session(session);
-
-        // 4. Crea la COPIA LOCALE del piatto
-        const newDish = new Dish({
-            name: originalDish.name,
-            category: originalDish.category,
-            image: originalDish.image,
-            description: originalDish.description,
-            ingredients: originalDish.ingredients,
-            measures: originalDish.measures,
-            externalId: originalDish.externalId, // Manteniamo riferimento se serve
-            price: Number(price), // Prezzo deciso dal ristoratore
-            restaurantId: restaurant._id,
-            source: 'restaurant' // Questo lo rende modificabile/eliminabile
-        });
-
-        await newDish.save({ session });
-
-        // 5. Aggiunge al Menù
-        await Menu.findByIdAndUpdate(
-            restaurant.menuId,
-            { $push: { dishIds: newDish._id } },
-            { session }
-        );
-
-        await session.commitTransaction();
-        session.endSession();
-
-        res.status(201).json({ success: true, data: newDish, message: 'Piatto importato con successo' });
-
-    } catch (err) {
-        await session.abortTransaction();
-        session.endSession();
-        res.status(400).json({ success: false, message: err.message });
+    if (!restaurantId) {
+      throw new Error("Il campo restaurantId è obbligatorio per l'importazione.");
     }
+
+    // 1. Verifica che il ristorante appartenga al ristoratore loggato
+    const restaurateur = await Restaurateur.findOne({ userId: req.user.userId || req.user.id });
+    if (!restaurateur || !restaurateur.restaurantIds.map(String).includes(restaurantId)) {
+      throw new Error('Non sei autorizzato a gestire questo ristorante');
+    }
+
+    // 2. Trova il piatto originale nel catalogo
+    const originalDish = await Dish.findById(catalogDishId).session(session);
+    if (!originalDish) throw new Error('Piatto catalogo non trovato');
+
+    // 3. Trova il Ristorante per avere il menuId
+    const restaurant = await Restaurant.findById(restaurantId).session(session);
+
+    // 4. Crea la COPIA LOCALE del piatto
+    const newDish = new Dish({
+      name: originalDish.name,
+      category: originalDish.category,
+      image: originalDish.image,
+      description: originalDish.description,
+      ingredients: originalDish.ingredients,
+      measures: originalDish.measures,
+      externalId: originalDish.externalId,
+      price: Number(price), // Prezzo deciso dal ristoratore
+      restaurantId: restaurantId,
+      source: 'restaurant' // Questo lo rende modificabile/eliminabile
+    });
+
+    await newDish.save({ session });
+
+    // 5. Aggiunge al Menù
+    await Menu.findByIdAndUpdate(
+      restaurant.menuId,
+      { $push: { dishIds: newDish._id } },
+      { session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({ success: true, data: newDish, message: 'Piatto importato con successo' });
+
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(400).json({ success: false, message: err.message });
+  }
 });
 
 // PUT /api/lv/dishes/:id
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const dish = await Dish.findById(req.params.id);
+    const dishId = req.params.id;
+    const dish = await Dish.findById(dishId);
+
     if (!dish) return res.status(404).json({ success: false, message: 'Piatto non trovato' });
 
-    // FIX: Controllo proprietario tramite DB, non req.user.restaurantId
-    const restaurateur = await Restaurateur.findOne({ userId: req.user.userId || req.user.id });
-    
-    // Verifichiamo se l'ID del ristorante del piatto è nella lista del ristoratore
-    if (!restaurateur || !restaurateur.restaurantIds.map(String).includes(String(dish.restaurantId))) {
-       return res.status(403).json({ success: false, message: 'Non puoi modificare questo piatto (Non è tuo)' });
+    // 1. Controllo Proprietà: Usiamo userId dal tuo token
+    const restaurateur = await Restaurateur.findOne({ userId: req.user.userId });
+
+    // Verifichiamo se il restaurantId del piatto è presente tra quelli del ristoratore
+    const isOwner = restaurateur && restaurateur.restaurantIds.some(id => id.toString() === dish.restaurantId?.toString());
+
+    if (!isOwner) {
+      return res.status(403).json({ success: false, message: 'Non sei autorizzato a modificare questo piatto.' });
     }
 
-    // Impedisci modifica piatti catalogo (sicurezza extra)
+    // 2. Protezione Catalogo: Non si modificano i piatti originali
     if (dish.source === 'catalog') {
-        return res.status(403).json({ success: false, message: 'Non puoi modificare i piatti del catalogo globale. Devi prima importarli.' });
+      return res.status(403).json({ success: false, message: 'I piatti del catalogo non possono essere modificati direttamente.' });
     }
 
-    Object.assign(dish, req.body);
-    await dish.save();
-
-    res.json({ success: true, message: 'Piatto aggiornato', data: dish });
+    // 3. Aggiornamento
+    const updatedDish = await Dish.findByIdAndUpdate(dishId, req.body, { new: true });
+    res.json({ success: true, message: 'Piatto aggiornato', data: updatedDish });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
 });
 
 // DELETE /api/lv/dishes/:id
-router.delete('/:id', authMiddleware, async (req, res) => {
+/*router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const dish = await Dish.findById(req.params.id);
     if (!dish) return res.status(404).json({ success: false, message: 'Piatto non trovato' });
 
-    // FIX: Stesso controllo di proprietà della PUT
-    const restaurateur = await Restaurateur.findOne({ userId: req.user.userId || req.user.id });
-    
-    if (!restaurateur || !restaurateur.restaurantIds.map(String).includes(String(dish.restaurantId))) {
-      return res.status(403).json({ success: false, message: 'Non puoi eliminare questo piatto (Non è tuo)' });
+    // 1. Controllo Proprietà 
+    const restaurateur = await Restaurateur.findOne({ userId: req.user.userId });
+    const isOwner = restaurateur && restaurateur.restaurantIds.some(id => id.toString() === dish.restaurantId?.toString());
+
+    if (!isOwner) {
+      return res.status(403).json({ success: false, message: 'Non sei autorizzato a eliminare questo piatto.' });
     }
 
     if (dish.source === 'catalog') {
         return res.status(403).json({ success: false, message: 'Impossibile eliminare piatti dal catalogo globale.' });
     }
 
-    // Importante: Rimuovere anche il riferimento dall'array dishIds del Menu!
-    // (Opzionale ma consigliato per pulizia DB)
+    // 2. Eliminazione fisica
+    await Dish.findByIdAndDelete(req.params.id);
+
+    // 3. Pulizia riferimento nel Menù
     const restaurant = await Restaurant.findById(dish.restaurantId);
-    if(restaurant && restaurant.menuId) {
-        await Menu.findByIdAndUpdate(restaurant.menuId, { $pull: { dishIds: dish._id }});
+    if (restaurant && restaurant.menuId) {
+        await Menu.findByIdAndUpdate(restaurant.menuId, {
+            $pull: { dishIds: dish._id }
+        });
     }
 
-    await dish.deleteOne();
-    res.json({ success: true, message: 'Piatto eliminato' });
+    res.json({ success: true, message: 'Piatto eliminato con successo' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});*/
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    console.log("DEBUG DELETE - ID Utente dal token:", req.user.userId);
+
+    const dish = await Dish.findById(req.params.id);
+    if (!dish) return res.status(404).json({ success: false, message: 'Piatto non trovato' });
+
+    const restaurateur = await Restaurateur.findOne({ userId: req.user.userId });
+
+    if (!restaurateur) {
+      console.log("DEBUG DELETE - Ristoratore non trovato per userId:", req.user.userId);
+      return res.status(403).json({ success: false, message: 'Profilo ristoratore non trovato' });
+    }
+
+    console.log("DEBUG DELETE - I tuoi ristoranti:", restaurateur.restaurantIds);
+    console.log("DEBUG DELETE - Ristorante del piatto:", dish.restaurantId);
+
+    const isOwner = restaurateur.restaurantIds.some(id => id.toString() === dish.restaurantId?.toString());
+
+    if (!isOwner) {
+      return res.status(403).json({ success: false, message: 'Non sei il proprietario' });
+    }
+
+    await Dish.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Eliminato' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
