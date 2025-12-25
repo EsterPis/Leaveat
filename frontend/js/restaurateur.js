@@ -1,7 +1,9 @@
 const API = '/api/lv';
 const API_DISHES = API + '/dishes';
 const API_RESTAURATEURS = API + '/restaurateurs';
-const token = localStorage.getItem('token'); // settato dopo login
+const token = localStorage.getItem('token');
+
+import { renderDishRow } from './utils/ui-components.js'
 
 if (!token) {
   window.location.href = '/login.html';
@@ -158,7 +160,7 @@ function initStep3() {
   renderCategoryFilterOptions(); // Carica la select delle categorie
   renderCategorySelect();        // Carica la select per "Nuovo Piatto"
   updateSummaryTab();
-  
+
   hasUnseenChanges = false;
   updateBadge();
 }
@@ -195,24 +197,24 @@ function showToastMessage() {
 async function loadCatalog() {
   try {
     const res = await fetch(`${API_DISHES}/catalog`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        }
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
     });
-    
+
     const json = await res.json();
-    
+
     if (json.success) {
       catalogDishes = json.data || [];
       visibleLimit = PAGE_SIZE;
       renderCatalogList();
     } else {
-      if(res.status === 401 || res.status === 403) {
-          alert("Sessione scaduta.");
-          window.location.href = '/login.html';
-          return;
+      if (res.status === 401 || res.status === 403) {
+        alert("Sessione scaduta.");
+        window.location.href = '/login.html';
+        return;
       }
       showAlert('error', json.message);
     }
@@ -224,7 +226,7 @@ async function loadCatalog() {
 
 function renderCategoryFilterOptions() {
   const select = document.getElementById('catFilterCategory');
-  if(!select) return;
+  if (!select) return;
   select.innerHTML = '<option value="">Tutte le categorie</option>';
   CATEGORIES_LIST.forEach(cat => {
     const opt = document.createElement('option');
@@ -236,19 +238,19 @@ function renderCategoryFilterOptions() {
 
 // Bottoni Filtri e Load More
 const btnLoadMore = document.getElementById('btnLoadMore');
-if(btnLoadMore) {
-    btnLoadMore.onclick = () => {
-        visibleLimit += PAGE_SIZE;
-        renderCatalogList();
-    };
+if (btnLoadMore) {
+  btnLoadMore.onclick = () => {
+    visibleLimit += PAGE_SIZE;
+    renderCatalogList();
+  };
 }
 
 const applyBtn = document.getElementById('applyCatalogFilters');
-if(applyBtn) {
-    applyBtn.onclick = () => {
-        visibleLimit = PAGE_SIZE; // Reset paginazione su nuovi filtri
-        renderCatalogList();
-    };
+if (applyBtn) {
+  applyBtn.onclick = () => {
+    visibleLimit = PAGE_SIZE; // Reset paginazione su nuovi filtri
+    renderCatalogList();
+  };
 }
 
 function renderCatalogList() {
@@ -257,15 +259,15 @@ function renderCatalogList() {
   const loadMoreContainer = document.getElementById('load-more-container');
   const resultsCount = document.getElementById('results-count');
 
-  if(!listContainer) return;
-  
+  if (!listContainer) return;
+
   listContainer.innerHTML = '';
 
   // 1. Leggi Filtri
   const nameVal = (document.getElementById('catFilterName').value || '').toLowerCase().trim();
   const ingrVal = (document.getElementById('catFilterIngr').value || '').toLowerCase().trim();
   const catVal = (document.getElementById('catFilterCategory').value || '').toLowerCase().trim();
-  
+
   // 2. Filtra (Logica Indipendente)
   const filtered = catalogDishes.filter(dish => {
     const dName = (dish.name || '').toLowerCase();
@@ -275,7 +277,7 @@ function renderCatalogList() {
     if (nameVal) return dName.includes(nameVal);
     if (ingrVal) return dIngr.toLowerCase().includes(ingrVal);
     if (catVal) return dCat === catVal;
-    
+
     return true; // Se nessun filtro attivo, mostra tutto
   });
 
@@ -284,68 +286,49 @@ function renderCatalogList() {
 
   // 4. Render
   if (filtered.length === 0) {
-    if(emptyMsg) emptyMsg.classList.remove('d-none');
-    if(loadMoreContainer) loadMoreContainer.classList.add('d-none');
+    if (emptyMsg) emptyMsg.classList.remove('d-none');
+    if (loadMoreContainer) loadMoreContainer.classList.add('d-none');
   } else {
-    if(emptyMsg) emptyMsg.classList.add('d-none');
-    
+    if (emptyMsg) emptyMsg.classList.add('d-none');
+
     resultsToShow.forEach(dish => {
-      const item = document.createElement('div');
-      item.className = "list-group-item d-flex justify-content-between align-items-center";
-      
+      // Verifichiamo se il piatto è già nel menù
       const isAdded = myMenu.some(m => m.source === 'catalog' && m.catalogId === dish._id);
 
-      item.innerHTML = `
-        <div class="d-flex align-items-center gap-3">
-            <img src="${dish.imageUrl || dish.image || 'https://via.placeholder.com/50'}" 
-                 style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px;">
-            <div>
-                <h6 class="mb-1 text-truncate" style="max-width: 300px;">${dish.name}</h6>
-                <div class="text-muted small">
-                  <span class="badge bg-light text-dark border">${dish.category}</span>
-                </div>
-            </div>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-            <a href="dish-details.html?id=${dish._id}" target="_blank" class="btn btn-sm btn-outline-secondary">
-               <i class="bi bi-eye"></i> Dettagli
-            </a>
-            <button class="btn btn-sm btn-primary btn-add-cat" data-id="${dish._id}" ${isAdded ? 'disabled' : ''}>
-               <i class="bi bi-plus-lg"></i> ${isAdded ? 'Aggiunto' : 'Aggiungi'}
-            </button>
-        </div>
-      `;
+      // CHIAMATA AL COMPONENTE MODULARE
+      const item = renderDishRow(
+        dish,
+        'Aggiungi',
+        (d) => addCatalogDishToMenu(d._id),
+        isAdded
+      );
+
       listContainer.appendChild(item);
     });
 
     // Gestione bottone Load More
     if (loadMoreContainer) {
-        if (visibleLimit < filtered.length) {
-            loadMoreContainer.classList.remove('d-none');
-            if(resultsCount) resultsCount.textContent = `Mostrati ${resultsToShow.length} di ${filtered.length} risultati`;
-        } else {
-            loadMoreContainer.classList.add('d-none');
-        }
+      if (visibleLimit < filtered.length) {
+        loadMoreContainer.classList.remove('d-none');
+        if (resultsCount) resultsCount.textContent = `Mostrati ${resultsToShow.length} di ${filtered.length} risultati`;
+      } else {
+        loadMoreContainer.classList.add('d-none');
+      }
     }
-
-    // Event Listener per "Aggiungi"
-    document.querySelectorAll('.btn-add-cat').forEach(b => {
-      b.addEventListener('click', (e) => addCatalogDishToMenu(e.currentTarget.dataset.id));
-    });
   }
 }
 
 // Funzione Aggiunta Piatto (che mancava!)
 function addCatalogDishToMenu(id) {
   const dish = catalogDishes.find(d => d._id === id);
-  if(!dish) return;
+  if (!dish) return;
 
   const priceStr = prompt(`A che prezzo vuoi vendere "${dish.name}"?`);
-  if(priceStr === null) return; 
-  
+  if (priceStr === null) return;
+
   const price = parseFloat(priceStr.replace(',', '.'));
 
-  if(isNaN(price) || price <= 0) {
+  if (isNaN(price) || price <= 0) {
     alert("Prezzo non valido.");
     return;
   }
@@ -364,7 +347,7 @@ function addCatalogDishToMenu(id) {
   hasUnseenChanges = true;
   updateBadge();
   showToastMessage();
-  renderCatalogList(); 
+  renderCatalogList();
 }
 
 

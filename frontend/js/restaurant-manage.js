@@ -3,6 +3,8 @@ const urlParams = new URLSearchParams(window.location.search);
 const restaurantId = urlParams.get('id');
 const token = localStorage.getItem('token');
 
+import { renderDishRow } from "./utils/ui-components.js";
+
 document.addEventListener('DOMContentLoaded', () => {
     if (!token) {
         window.location.href = 'login.html';
@@ -73,15 +75,15 @@ async function loadRestaurantDetails() {
                 tbody.appendChild(tr);
             });
             // Dopo aver popolato la tabella, leghiamo gli eventi dinamici
-            bindMenuEvents(); 
-        } else{
+            bindMenuEvents();
+        } else {
             tbody.innerHTML = '<tr><td colspan="4" class="text-center">Nessun piatto nel menù.</td></tr>';
         }
 
-} catch (err) {
-    console.error(err);
-    alert('Errore caricamento dati ristorante: ' + err.message);
-}
+    } catch (err) {
+        console.error(err);
+        alert('Errore caricamento dati ristorante: ' + err.message);
+    }
 }
 
 // FUNZIONE 2: Carica e Gestisci Ordini
@@ -179,11 +181,7 @@ async function updateStatus(orderId, newStatus) {
     }
 }
 
-// ==========================================
-// FUNZIONI PER GESTIRE I PULSANTI
-// ==========================================
-
-// 1. Modifica Dati Ristorante (pulsante grande in Info Tab)
+//Modifica Dati Ristorante (pulsante grande in Info Tab)
 const btnEditInfo = document.getElementById('btn-edit-info');
 if (btnEditInfo) {
     btnEditInfo.addEventListener('click', () => {
@@ -192,19 +190,20 @@ if (btnEditInfo) {
     });
 }
 
-// 2. Aggiungi Piatto (pulsante grande in Menù Tab)
+//Aggiungi Piatto (pulsante grande in Menù Tab)
 // Questo pulsante ora apre il Modale (il codice del modale deve essere nell'HTML)
 const btnAddDish = document.getElementById('btn-add-dish');
 if (btnAddDish) {
     btnAddDish.addEventListener('click', () => {
         // Usa la classe Bootstrap per aprire il modale
         const addDishModal = new bootstrap.Modal(document.getElementById('addDishModal'));
+        loadCatalogList(''); // Carica piatti catalog nel modale
         addDishModal.show();
     });
 }
 
 
-// 3. Gestione invio form (POST /api/lv/dishes)
+//Gestione invio form (POST /api/lv/dishes)
 const addDishForm = document.getElementById('add-dish-form');
 
 if (addDishForm) {
@@ -269,7 +268,8 @@ if (addDishForm) {
 }
 
 
-// FUNZIONE 4: Collega Eventi ai Pulsanti dei Piatti (chiamata da loadRestaurantDetails)
+
+//Collega Eventi ai Pulsanti dei Piatti (chiamata da loadRestaurantDetails)
 function bindMenuEvents() {
     // Gestione click per la modifica del singolo piatto
     document.querySelectorAll('.btn-edit-dish').forEach(button => {
@@ -292,7 +292,7 @@ function bindMenuEvents() {
     });
 }
 
-// FUNZIONE 5: Eliminazione Piatto (Richiesta DELETE /api/lv/dishes/:id)
+//Eliminazione Piatto (Richiesta DELETE /api/lv/dishes/:id)
 async function deleteDish(dishId) {
     try {
         const response = await fetch(`/api/lv/dishes/${dishId}`, {
@@ -316,42 +316,32 @@ async function deleteDish(dishId) {
     }
 }
 
-// --- GESTIONE RICERCA CATALOGO (Punto 4) ---
+// GESTIONE RICERCA CATALOGO
 const btnSearchCatalog = document.getElementById('btn-search-catalog');
 if (btnSearchCatalog) {
     btnSearchCatalog.addEventListener('click', async () => {
         const query = document.getElementById('catalog-search-input').value;
         const resultsContainer = document.getElementById('catalog-results');
-        
+
         resultsContainer.innerHTML = '<div class="spinner-border spinner-border-sm text-primary"></div> Caricamento...';
 
         try {
             // Chiama la rotta catalog esistente
             const res = await fetch(`/api/lv/dishes/catalog?name=${query}`, {
-                 headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             const json = await res.json();
-            
+
             resultsContainer.innerHTML = '';
-            
+
             if (!json.data || json.data.length === 0) {
                 resultsContainer.innerHTML = '<p class="text-center">Nessun risultato.</p>';
                 return;
             }
 
             json.data.forEach(dish => {
-                const btn = document.createElement('button');
-                btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
-                btn.innerHTML = `
-                    <div>
-                        <strong>${dish.name}</strong> <span class="badge bg-light text-dark border">${dish.category}</span>
-                        <div class="small text-muted">${dish.ingredients.slice(0, 3).join(', ')}...</div>
-                    </div>
-                    <span class="badge bg-primary rounded-pill">Importa</span>
-                `;
-                // Al click importiamo
-                btn.addEventListener('click', () => importDish(dish._id));
-                resultsContainer.appendChild(btn);
+                const dishRow = renderDishRow(dish, 'Importa', (d) => importDish(dish._id));
+                resultsContainer.appendChild(dishRow);
             });
         } catch (err) {
             resultsContainer.innerHTML = '<p class="text-danger">Errore ricerca.</p>';
@@ -392,5 +382,42 @@ async function importDish(catalogDishId) {
         }
     } catch (err) {
         alert('Errore di comunicazione');
+    }
+}
+
+/**
+ * Carica i piatti dal catalogo e li mostra nel modale.
+ * Se nameQuery è vuota, mostra i piatti predefiniti.
+ */
+async function loadCatalogList(nameQuery = '') {
+    const resultsContainer = document.getElementById('catalog-results');
+    if (!resultsContainer) return;
+
+    resultsContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-primary"></div> Caricamento...</div>';
+
+    try {
+        const url = nameQuery
+            ? `/api/lv/dishes/catalog?name=${encodeURIComponent(nameQuery)}`
+            : `/api/lv/dishes/catalog`;
+
+        const res = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+
+        resultsContainer.innerHTML = '';
+
+        if (!json.success || !json.data || json.data.length === 0) {
+            resultsContainer.innerHTML = '<p class="text-center text-muted p-3">Nessun piatto trovato.</p>';
+            return;
+        }
+
+        json.data.forEach(dish => {
+            // Utilizza la funzione renderDishRow importata dal modulo ui-components.js
+            const dishRow = renderDishRow(dish, 'Importa', (d) => importDish(d._id));
+            resultsContainer.appendChild(dishRow);
+        });
+    } catch (err) {
+        resultsContainer.innerHTML = '<p class="text-danger text-center p-3">Errore nel caricamento.</p>';
     }
 }
