@@ -15,7 +15,6 @@ const dishRoutes = require('./routes/dishes'); //importa le rotte dei piatti
 const categoryRoutes = require('./routes/categories');
 const orderRoutes = require('./routes/orders'); //importa le rotte degli ordini
 
-const { authMiddleware } = require('./middleware/auth'); //importa il middleware di autenticazione
 const Dish = require('./models/Dish'); //importa il modello Dish
 
 //Funzione per il caricamento automatico dei piatti 
