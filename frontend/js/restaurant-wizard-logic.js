@@ -201,19 +201,38 @@ function updateSummaryUI() {
  * EXPORT DATI PER ESTERNO (Scenario A)
  */
 export function gatherWizardData() {
-    return {
-        restaurant: {
-            displayName: document.getElementById('res-displayName').value,
-            legalName: document.getElementById('res-legalName').value,
-            address: {
-                // Per semplicità mandiamo tutto come stringa su 'street', 
-                // il backend dovrà essere adattato o il frontend più specifico.
-                street: document.getElementById('res-address').value, 
-                number: '', city: '', province: '' 
-            },
-        },
-        menuDishes: currentDishes
+    // Funzione helper per leggere i valori in sicurezza
+    const getVal = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : '';
     };
+
+    // La struttura segue esattamente il tuo modello Restaurant.js [cite: 221-252]
+    const data = {
+        restaurant: {
+            legalName: getVal('legalRestaurantName'),
+            displayName: getVal('displayRestaurantName'),
+            phoneNumber: getVal('restaurantPhone'),
+            email: getVal('restaurantEmail'),
+            // Indirizzo strutturato come richiesto dal database [cite: 237-240]
+            address: {
+                street: getVal('res-street'),
+                number: getVal('res-number'),
+                zip: getVal('res-zip'),
+                city: getVal('res-city'),
+                province: getVal('res-province')
+            },
+            openingHours: getVal('openingHours'),
+            description: getVal('description'),
+            websiteUrl: getVal('websiteUrl'),
+            imageUrl: getVal('imageUrl'),
+            status: 'DRAFT' // Stato iniziale come definito nel modello [cite: 247]
+        },
+        // currentDishes è la variabile globale definita in restaurant-wizard-logic.js
+        menuDishes: typeof currentDishes !== 'undefined' ? currentDishes : []
+    };
+
+    return data;
 }
 
 // LOGICA SALVATAGGIO DIRETTO (Scenario B)

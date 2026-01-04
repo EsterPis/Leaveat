@@ -33,7 +33,104 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// --- HELPERS UI (Mantenuti dal tuo file originale) ---
+// --- HELPERS UI E VALIDAZIONI ---
+// Regex per Email
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Regex per Telefono (10 cifre italiane)
+const phoneRegex = /^[0-9]{10}$/;
+// Regex base per Partita IVA italiana (11 cifre)
+const vatRegex = /^[1-9]/;
+// Regex base per IBAN Italiano (IT + 2 cifre controllo + 1 lettera + 22 alfanumerici)
+const ibanRegex = /^[1-9]/;
+// Regex per CAP (5 cifre)
+const zipRegex = /^\d{5}$/;
+
+function isEmpty(value) {
+    return !value || !value.toString().trim().length === 0;
+}
+
+function isValidEmail(email) {
+    return emailRegex.test(email);
+}
+
+function isValidPhone(phone) {
+    return phoneRegex.test(phone);
+}
+
+function isValidVAT(vat) {
+    if (!vat) return false;
+    const cleanVat = vat.toString().trim();
+    return vatRegex.test(cleanVat);
+}
+
+function isValidIBAN(iban) {
+   if (!iban) return false;
+    const cleanIban = iban.replace(/\s+/g, '').toUpperCase();
+    return ibanRegex.test(cleanIban);
+}
+
+// --- Modifica validateFiscalData (Step 1) ---
+
+function validateFiscalData(d) {
+    if (Object.values(d).some(isEmpty)) {
+        showAlert('error', 'Compila tutti i campi dei dati fiscali.');
+        return false;
+    }
+
+    if (!isValidEmail(d.adminEmail)) {
+        showAlert('error', 'L\'email amministrativa non è valida.');
+        return false;
+    }
+
+    if (!isValidVAT(d.vatNumber)) {
+        showAlert('error', 'La Partita IVA deve essere composta da 11 cifre.');
+        return false;
+    }
+
+    if (!isValidIBAN(d.iban)) {
+        showAlert('error', 'Il codice IBAN non è valido (formato IT...).');
+        return false;
+    }
+
+    return true;
+}
+
+// --- Modifica validateRestaurantData (Step 2) ---
+
+function validateRestaurantData(r) {
+    // Verifica campi vuoti
+    if (
+        isEmpty(r.legalName) || isEmpty(r.displayName) || isEmpty(r.phoneNumber) ||
+        isEmpty(r.openingHours) || isEmpty(r.address.street) || isEmpty(r.address.number) ||
+        isEmpty(r.address.zip) || isEmpty(r.address.city) || isEmpty(r.address.province)
+    ) {
+        showAlert('error', 'Compila tutti i campi obbligatori del ristorante.');
+        return false;
+    }
+
+    // Validazioni Specifiche
+    if (!isValidPhone(r.phoneNumber)) {
+        showAlert('error', 'Il telefono deve essere composto da 10 cifre numeriche.');
+        return false;
+    }
+
+    if (r.email && !isValidEmail(r.email)) {
+        showAlert('error', 'L\'email del ristorante non è valida.');
+        return false;
+    }
+
+    if (!zipRegex.test(r.address.zip)) {
+        showAlert('error', 'Il CAP deve essere composto da 5 cifre.');
+        return false;
+    }
+
+    if (r.address.province.length !== 2) {
+        showAlert('error', 'La provincia deve essere di 2 lettere (es. MI, RM).');
+        return false;
+    }
+
+    return true;
+}
 
 function showStep(n) {
     ['step1', 'step2', 'step3'].forEach((id, i) => {
@@ -83,17 +180,6 @@ function getFiscalData() {
         iban: document.getElementById('iban').value.trim(),
     };
 }
-
-function validateFiscalData(d) {
-    const isEmpty = (val) => !val || !val.toString().trim();
-    if (Object.values(d).some(isEmpty)) {
-        showAlert('error', 'Compila tutti i campi dei dati fiscali.');
-        return false;
-    }
-    return true;
-}
-
-
 // --- GESTIONE EVENTI STEPPER ---
 
 function setupStepperEvents() {
@@ -121,13 +207,11 @@ function setupStepperEvents() {
     // 3. Step 2 -> Step 3 (Restaurant -> Menu)
     document.getElementById('toStep3').onclick = () => {
         clearAlert();
-        
-        // Usiamo il modulo condiviso per leggere i dati del form ristorante
+
         const wizardData = gatherWizardData();
         
         // Validazione minima Ristorante
-        if (!wizardData.restaurant.displayName || !wizardData.restaurant.legalName || !wizardData.restaurant.address.street) {
-            showAlert('error', 'Compila i campi obbligatori del ristorante (Nome, Ragione Sociale, Indirizzo).');
+        if (!validateRestaurantData(wizardData.restaurant)) {
             return;
         }
 
