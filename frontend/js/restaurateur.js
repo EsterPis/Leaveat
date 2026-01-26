@@ -83,20 +83,20 @@ function showStep(n) {
 }
 
 function showAlert(type, message) {
-    const alert = document.getElementById('alert');
-    if (!alert) { 
+    const alertContainer = document.getElementById('alertMessage');
+    if (!alertContainer) { 
         alert(message);
         return; 
     }
-    alert.className = 'alert mt-3';
-    alert.classList.add(type === 'success' ? 'alert-success' : 'alert-danger');
-    alert.textContent = message;
-    alert.classList.remove('d-none');
+    alertContainer.className = 'alert mt-3';
+    alertContainer.classList.add(type === 'success' ? 'alert-success' : 'alert-danger');
+    alertContainer.textContent = message;
+    alertContainer.classList.remove('d-none');
 }
 
 function clearAlert() {
-    const alert = document.getElementById('alert');
-    if (alert) alert.classList.add('d-none');
+    const alertContainer = document.getElementById('alertMessage');
+    if (alertContainer) alertContainer.classList.add('d-none');
 }
 
 // --- LOGICA DATI FISCALI ---
