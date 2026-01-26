@@ -1,71 +1,49 @@
-/*export function renderDishRow(dish, buttonText, onClick, isAdded = false) {
-    const div = document.createElement('div');
-    div.className = "list-group-item d-flex align-items-center p-2 mb-2 shadow-sm border rounded justify-content-between";
-
-    div.innerHTML = `
-        <div class="d-flex align-items-center flex-grow-1">
-            <div class="flex-grow-1">
-                <h6 class="mb-0 fw-bold">${dish.name}</h6>
-                <small class="text-muted">${dish.category} - €${dish.price.toFixed(2)}</small>
-            </div>
-        </div>
-        <button class="btn btn-sm ${isAdded ? 'btn-secondary' : 'btn-primary'} action-btn" ${isAdded ? 'disabled' : ''}>
-            ${isAdded ? 'Aggiunto' : buttonText}
-        </button>
-    `;
-
-    if (!isAdded) {
-        div.querySelector('.action-btn').addEventListener('click', (e) => {
-            e.preventDefault();
-            onClick(dish);
-        });
-    }
-    return div;
-}*/
+// ui-components.js
 
 export function renderDishRow(dish, buttonText, onClick, isAdded = false) {
-    // ... (Il codice di questa funzione rimane invariato come concordato prima) ...
     const div = document.createElement('div');
-    div.className = "list-group-item d-flex align-items-center p-3 mb-2 shadow-sm border rounded justify-content-between bg-white";
+    // Stile coerente per righe catalogo e riepilogo
+    div.className = "list-group-item d-flex align-items-center p-2 mb-2 shadow-sm border rounded justify-content-between bg-white";
+
+    const imgUrl = dish.imageUrl || dish.image || 'https://via.placeholder.com/80?text=Piatto';
+    
+    // Gestione ingredienti: se è array unisci, se stringa usa quella, se null metti trattino
+    const ingredientsText = Array.isArray(dish.ingredients) 
+        ? dish.ingredients.join(', ') 
+        : (dish.ingredients || '-');
 
     div.innerHTML = `
-        <div class="d-flex align-items-center flex-grow-1">
-            <img src="${dish.imageUrl || dish.image || 'https://via.placeholder.com/80'}" 
-                 class="rounded me-3" 
-                 style="width: 70px; height: 70px; object-fit: cover; border: 1px solid #dee2e6;">
+        <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+            <img src="${imgUrl}" class="rounded me-3 flex-shrink-0" style="width: 60px; height: 60px; object-fit: cover;">
             
-            <div class="flex-grow-1">
-                <h6 class="mb-1 fw-bold">${dish.name}</h6>
-                <div class="mb-1">
-                    <span class="badge bg-info text-dark small">${dish.category}</span>
-                    <span class="text-muted small ms-2">${dish.area || ''}</span>
-                </div>
-                <p class="mb-0 small text-muted text-truncate" style="max-width: 250px;">
-                    ${Array.isArray(dish.ingredients) ? dish.ingredients.join(', ') : 'Nessun ingrediente'}
-                </p>
+            <div class="flex-grow-1 min-w-0">
+                <h6 class="mb-0 fw-bold text-truncate">${dish.name}</h6>
+                <div class="small text-muted text-truncate">${dish.category || 'Generico'}</div>
+                <div class="small text-muted text-truncate" style="font-size: 0.8rem;">${ingredientsText}</div>
             </div>
         </div>
 
-        <div class="ms-3 text-end d-flex flex-column align-items-end">
-            <div class="fw-bold mb-2">€ ${dish.price ? dish.price.toFixed(2) : '0.00'}</div>
-            <button class="btn btn-sm btn-primary action-btn" ${isAdded ? 'disabled' : ''}>
-                <i class="bi bi-plus-lg"></i> ${isAdded ? 'Aggiunto' : buttonText}
+        <div class="ms-3 text-end flex-shrink-0">
+            <div class="fw-bold mb-1">€ ${dish.price ? parseFloat(dish.price).toFixed(2) : '0.00'}</div>
+            <button class="btn btn-sm ${isAdded ? 'btn-secondary' : 'btn-primary'} action-btn" ${isAdded ? 'disabled' : ''}>
+                ${isAdded ? '<i class="bi bi-check"></i>' : '<i class="bi bi-plus"></i> ' + buttonText}
             </button>
         </div>
     `;
 
     const btn = div.querySelector('.action-btn');
-    if (!isAdded) {
+    if (!isAdded && btn) {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             onClick(dish);
         });
     }
-
+    
     return div;
 }
 
 export function renderRestaurantForm() {
+    // ... (Tutto il codice precedente del form ristorante rimane identico) ...
     return `
         <div class="card p-4 mb-4 shadow-sm border-0">
             <h3 class="h5 mb-3 text-primary"><i class="bi bi-shop me-2"></i>Dati del Ristorante</h3>
@@ -165,25 +143,32 @@ export function renderMenuSection(showCloneButton = false) {
                             <input type="text" id="catalog-search-input" class="form-control" placeholder="Cerca piatto (es. Margherita)...">
                             <button class="btn btn-primary" id="btn-search-catalog">Cerca</button>
                         </div>
-                        <div id="catalog-results" class="list-group" style="max-height: 300px; overflow-y: auto;"></div>
+                        <div id="catalog-results" class="list-group" style="max-height: 400px; overflow-y: auto;"></div>
                     </div>
 
                     <div class="tab-pane fade" id="custom-tab">
                         <div class="row g-2">
                             <div class="col-md-8">
-                                <input type="text" id="custom-dish-name" class="form-control" placeholder="Nome Piatto">
+                                <label class="small fw-bold">Nome Piatto <span class="text-danger">*</span></label>
+                                <input type="text" id="custom-dish-name" class="form-control" placeholder="Es. Pizza Speciale">
                             </div>
                             <div class="col-md-4">
-                                <input type="number" id="custom-dish-price" class="form-control" placeholder="Prezzo (€)" step="0.50">
+                                <label class="small fw-bold">Prezzo (€) <span class="text-danger">*</span></label>
+                                <input type="number" id="custom-dish-price" class="form-control" placeholder="0.00" step="0.50">
                             </div>
                             <div class="col-md-12">
-                                <input type="text" id="custom-dish-category" class="form-control" placeholder="Categoria (es. Primi, Pizze)">
+                                <label class="small fw-bold">Categoria <span class="text-danger">*</span></label>
+                                <select id="custom-dish-category" class="form-select">
+                                    <option value="">Caricamento categorie...</option>
+                                </select>
                             </div>
                             <div class="col-md-12">
-                                <textarea id="custom-dish-desc" class="form-control" placeholder="Descrizione / Ingredienti" rows="2"></textarea>
+                                <label class="small fw-bold">Ingredienti / Descrizione (Separa ingredienti con virgola)</label>
+                                <textarea id="custom-dish-desc" class="form-control" placeholder="Es. Pomodoro, Mozzarella, Basilico" rows="2"></textarea>
+                                <div class="form-text small">Importante: gli ingredienti verranno salvati separando il testo con le virgole.</div>
                             </div>
                             <div class="col-12 text-end mt-2">
-                                <button class="btn btn-success btn-sm" id="btn-add-custom-dish">Aggiungi al Menù</button>
+                                <button class="btn btn-success" id="btn-add-custom-dish"><i class="bi bi-plus-circle"></i> Aggiungi al Menù</button>
                             </div>
                         </div>
                     </div>
