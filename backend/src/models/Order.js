@@ -16,8 +16,7 @@ const OrderSchema = new mongoose.Schema({
         enum: ['ORDINATO', 'IN_PREPARAZIONE', 'CONSEGNATO', 'ANNULLATO'], 
         default: 'ORDINATO' 
     },
-    
-    createdAt: { type: Date, default: Date.now }
+    timestamps: true
 });
 
 module.exports = mongoose.model('Order', OrderSchema);

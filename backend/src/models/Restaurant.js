@@ -27,7 +27,7 @@ const RestaurantSchema = new mongoose.Schema({
   imageUrl:   { type: String, trim: true }, // URL logo/immagine
 
   // Collegamenti con menù e ordini
-  menuId: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu', unique: true },
+  //menuId: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu', unique: true },
   status: { type: String, enum: ['DRAFT','ACTIVE'], default: 'DRAFT' },
   orderIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }],
 }, {
