@@ -1,18 +1,25 @@
+/**
+ * app.js - Main application file for the LeaveAt backend server.
+ * -A- Imports necessary modules and middleware.
+ * -B- Imports route handlers for different API endpoints.
+ * -C- Configures Express application and middleware.
+ * -D- Sets up API routes.
+ * -E- Connects to MongoDB and starts the server on the specified port.
+ */
+
 /*-A- IMPORT MODULES */
 require('dotenv').config();  //variabili di ambiente
 const express = require('express'); //middelware 
 const mongoose = require('mongoose'); //interfaccia con mongoDB
 const cors = require('cors'); //permette al frontend di comunicare con il backend senza blocchi di sicurezza
 const path = require('path'); //gestione dei percorsi
-const fs = require('fs'); //lettura o scrittura di file --> per il caricamento automatico dei piatti
 
 /*-B- IMPORT MIDDLEWARE AND ROUTES */
-const { authMiddleware } = require('./middleware/auth'); //MODIFICARE
 const { importMealsIfEmpty } = require('./utils/catalogSeeder');
 const authRoutes = require('./routes/auth'); 
 const customerRoutes = require('./routes/customers'); 
-const restaurateurRoutes = require('./routes/restaurateur'); 
-const restaurantRoutes = require('./routes/restaurant'); 
+const restaurateurRoutes = require('./routes/restaurateurs'); 
+const restaurantRoutes = require('./routes/restaurants'); 
 const dishRoutes = require('./routes/dishes'); 
 const categoryRoutes = require('./routes/categories');
 const orderRoutes = require('./routes/orders'); 
@@ -38,18 +45,23 @@ app.use('/api/lv/restaurants', restaurantRoutes);
 app.use('/api/lv/dishes', dishRoutes);
 app.use('/api/lv/orders', orderRoutes);
 
+/*-E- START SERVER */
 const PORT = process.env.PORT || 3000;
+
+async function connectDB() {
+  const uri = process.env.MONGO_URI;
+  const dbName = process.env.DB_NAME || 'leaveat';
+  if (!uri) {
+    console.error('Missing MONGO_URI in .env');
+    process.exit(1);
+  }
+  await mongoose.connect(uri, { dbName });
+  console.log('MongoDB connected');
+}
 
 async function start() {
   try {
-    const uri = process.env.MONGO_URI;
-    const dbName = process.env.DB_NAME || 'leaveat';
-    if (!uri) {
-      console.error('Missing MONGO_URI in .env');
-      process.exit(1);
-    }
-    await mongoose.connect(uri, { dbName });
-    console.log('MongoDB connected');
+    await connectDB();
     await importMealsIfEmpty();
 
     app.listen(PORT, () => console.log('Server running on port ' + PORT));
