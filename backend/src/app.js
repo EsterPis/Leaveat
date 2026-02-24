@@ -1,3 +1,4 @@
+/*-A- IMPORT MODULES */
 require('dotenv').config();  //variabili di ambiente
 const express = require('express'); //middelware 
 const mongoose = require('mongoose'); //interfaccia con mongoDB
@@ -5,58 +6,18 @@ const cors = require('cors'); //permette al frontend di comunicare con il backen
 const path = require('path'); //gestione dei percorsi
 const fs = require('fs'); //lettura o scrittura di file --> per il caricamento automatico dei piatti
 
-const { authMiddleware } = require('./middleware/auth'); //importa il middleware di autenticazione
-
-const authRoutes = require('./routes/auth'); //importa le rotte di autenticazione
-const customerRoutes = require('./routes/customers'); //importa le rotte dei clienti
-const restaurateurRoutes = require('./routes/restaurateur'); //importa le rotte dei ristoratori
-const restaurantRoutes = require('./routes/restaurant'); //importa le rotte dei ristoranti
-const dishRoutes = require('./routes/dishes'); //importa le rotte dei piatti
+/*-B- IMPORT MIDDLEWARE AND ROUTES */
+const { authMiddleware } = require('./middleware/auth'); //MODIFICARE
+const { importMealsIfEmpty } = require('./utils/catalogSeeder');
+const authRoutes = require('./routes/auth'); 
+const customerRoutes = require('./routes/customers'); 
+const restaurateurRoutes = require('./routes/restaurateur'); 
+const restaurantRoutes = require('./routes/restaurant'); 
+const dishRoutes = require('./routes/dishes'); 
 const categoryRoutes = require('./routes/categories');
-const orderRoutes = require('./routes/orders'); //importa le rotte degli ordini
+const orderRoutes = require('./routes/orders'); 
 
-const Dish = require('./models/Dish'); //importa il modello Dish
-
-//Funzione per il caricamento automatico dei piatti 
-async function isCatalogEmpty() {
-  const count = await Dish.countDocuments(); //conta i documenti nella collezione Dish
-    return count === 0;
-} 
- 
-function loadMealsData(){ //se la collezione è vuota legge il file meals.json e importa i piatti
-    const filePath = path.join(__dirname, '../../data/meals.json'); 
-    return JSON.parse(fs.readFileSync(filePath, 'utf-8')); //legge il file e lo converte in oggetto JS
-}
- 
-function mapMealsToDishes(data){
-    //mappappatura dei dati per adattarli allo schema Dish
-    return data.map(m => ({
-      externalId: String(m.idMeal || m.externalId || ''), 
-      name: m.strMeal || m.name,
-      category: m.strCategory || m.category || '',
-      area: m.strArea || m.area || '',
-      image: m.strMealThumb || m.image || '',
-      description: m.strInstructions || m.description || '',
-      ingredients: Array.isArray(m.ingredients) ? m.ingredients : [],
-      measures: Array.isArray(m.measures) ? m.measures : [],
-      price: Number(m.price || 0) || 10.0, //se m.price è truthy lo converte in numero, altrimenti assegna 0. Se il risultato è 0 (falsy), assegna 10.0.
-      source: 'catalog'
-    }));
-}
-
-async function importMealsIfEmpty(){
-  if (await isCatalogEmpty()) {
-     console.log('Database vuoto, importo meals.json...');
-     const meals = loadMealsData();
-     const docs = mapMealsToDishes(meals);
-    await Dish.insertMany(docs); //inserisce i documenti nella collezione Dish
-    console.log(`Importati ${docs.length} piatti da meals.json`);
-  } else {
-    console.log('Catalogo già popolato.');
-  }
-}
-
-//Configurazione di express
+/*-C- EXPRESS CONFIGURATION */
 const app = express();
 app.use(cors());
 app.use(express.json()); //permette di leggere i dati in formato JSON
@@ -65,10 +26,10 @@ app.use(express.urlencoded({ extended: true })); //permette di leggere i dati da
 //Serve frontend static files
 app.use('/', express.static(path.join(__dirname, '../../frontend')));
 
-//----------------IMMAGINE PROVVISORIA----------------
+//----------------IMMAGINE PROVVISORIA MODIFICARE----------------
 app.use('/data', express.static(path.join(__dirname, '../../data'))); //permette di accedere alla cartella data per le immagini caricate
 
-//API routes
+/*-D- API ROUTES */
 app.use('/api/lv/users', authRoutes);
 app.use('/api/lv/categories', categoryRoutes);
 app.use('/api/lv/customers', customerRoutes);
