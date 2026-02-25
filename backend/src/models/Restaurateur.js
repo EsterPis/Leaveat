@@ -8,13 +8,6 @@ const RestaurateurSchema = new mongoose.Schema({
     unique: true
   },
 
-  // Un ristoratore può possedere più ristoranti
-  restaurantIds: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Restaurant',
-    required: true
-  }],
-
   // Dati fiscali
   VATNumber: {
     type: String,

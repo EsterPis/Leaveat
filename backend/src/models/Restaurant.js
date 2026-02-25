@@ -26,10 +26,11 @@ const RestaurantSchema = new mongoose.Schema({
   websiteUrl: { type: String, trim: true },
   imageUrl:   { type: String, trim: true }, // URL logo/immagine
 
-  // Collegamenti con menù e ordini
-  //menuId: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu', unique: true },
+  // Collegamenti con menù, ordini e ristoratori
+  menuId: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu', unique: true },
   status: { type: String, enum: ['DRAFT','ACTIVE'], default: 'DRAFT' },
   orderIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }],
+  restaurateurId: { type: mongoose.Schema.Types.ObjectId, ref: 'Restaurateur', required: true}
 }, {
   timestamps: true,
 });
