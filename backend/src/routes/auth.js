@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 //middleware
@@ -9,6 +10,8 @@ const Customer = require('../models/Customer');
 const Restaurateur = require('../models/Restaurateur');
 const Restaurant = require('../models/Restaurant');
 const Menu = require('../models/Menu');
+const Order = require('../models/Order');
+const Dish = require('../models/Dish');
 
 function signToken(user) {
     const payload = {
@@ -54,19 +57,34 @@ router.post('/register', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-    // ... (Il tuo codice login esistente va bene qui) ...
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) return res.status(401).json({ success: false, message: 'Utente non trovato' });
+
+        const user = await User.findOne({ email }).select('+password');
+        if (!user)
+            return res.status(401).json({ success: false, message: 'Utente non trovato' });
 
         const ok = await user.comparePassword(password);
-        if (!ok) return res.status(401).json({ success: false, message: 'Password errata' });
+        if (!ok)
+            return res.status(401).json({ success: false, message: 'Password errata' });
 
         const token = signToken(user);
-        return res.json({ success: true, data: { token } });
+
+        return res.json({
+            success: true,
+            data: {
+                token,
+                userId: user._id,
+                role: user.role
+            }
+        });
+
     } catch (err) {
-        return res.status(500).json({ success: false, message: 'Errore server', error: err.message });
+        return res.status(500).json({
+            success: false,
+            message: 'Errore server',
+            error: err.message
+        });
     }
 });
 
