@@ -15,7 +15,8 @@ const OrderSchema = new mongoose.Schema({
         type: String, 
         enum: ['ORDINATO', 'IN_PREPARAZIONE', 'CONSEGNATO', 'ANNULLATO'], 
         default: 'ORDINATO' 
-    },
+    }
+}, {
     timestamps: true
 });
 

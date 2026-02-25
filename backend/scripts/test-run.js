@@ -1,11 +1,16 @@
+/**
+ * Script: test-run.js
+ * Descrizione: Reset + Seed + Avvio server
+ */
+
 const { exec, spawn } = require("child_process");
 const path = require("path");
 
-// 1) Reset DB
-function resetDB() {
+function runCommand(command, message) {
     return new Promise((resolve, reject) => {
-        console.log("🔄 Reset del database...");
-        exec("npm run db:reset", (err, stdout) => {
+        console.log(message);
+
+        exec(command, (err, stdout, stderr) => {
             if (err) return reject(err);
             console.log(stdout);
             resolve();
@@ -13,41 +18,22 @@ function resetDB() {
     });
 }
 
-// 2) First Seed
-function seedDB() {
-    return new Promise((resolve, reject) => {
-        console.log("🌱 Import dei dati iniziali...");
-        exec("npm run db:seed:first", (err, stdout) => {
-            if (err) return reject(err);
-            console.log(stdout);
-            resolve();
-        });
-    });
-}
+async function startServer() {
+    console.log("🚀 Avvio server...");
 
-// 3) Avvio server con spawn (PROCESSO PERSISTENTE)
-function startServer() {
-    return new Promise((resolve) => {
-        console.log("🚀 Avvio del server...");
+    const backendPath = path.join(__dirname, "..", "src");
 
-        const backendPath = path.join(__dirname, "..", "src");
-        const server = spawn("node", ["app.js"], {
-            cwd: backendPath,
-            stdio: "inherit", // mostra i log in tempo reale!
-            shell: true
-        });
-
-        console.log("✅ Server avviato correttamente");
-
-        // Non chiudiamo la Promise: lasciamo il processo attivo
-        // per mantenere il server vivo come da terminale
+    spawn("node", ["app.js"], {
+        cwd: backendPath,
+        stdio: "inherit",
+        shell: true
     });
 }
 
 (async () => {
     try {
-        await resetDB();
-        await seedDB();
+        await runCommand("npm run db:reset", "🔄 Reset database...");
+        await runCommand("npm run db:seed:first", "🌱 Seed iniziale...");
         await startServer();
     } catch (err) {
         console.error("❌ Errore:", err);
