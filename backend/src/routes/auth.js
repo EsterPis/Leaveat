@@ -115,45 +115,86 @@ router.put('/me', authMiddleware, async (req, res) => {
     }
 });
 
-// 3. DELETE /me - Elimina account e dati collegati
+// DELETE /api/lv/users/me
+// Deletes user account and all related data
 router.delete('/me', authMiddleware, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const user = await User.findById(userId);
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-        if (!user) return res.status(404).json({ success: false, message: 'Utente non trovato' });
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).session(session);
 
-        if (user.role === 'CUSTOMER') {
-            // Elimina profilo cliente
-            await Customer.findOneAndDelete({ userId: userId });
-        }
-        else if (user.role === 'RESTAURATEUR') {
-            // CASCATA: Elimina profilo ristoratore, menu e ristoranti
-            const restaurateur = await Restaurateur.findOne({ userId: userId });
-
-            if (restaurateur) {
-                // 1. Elimina i Menu associati a questo ristoratore
-                await Menu.deleteMany({ restaurateurId: restaurateur._id });
-
-                // 2. Elimina i Ristoranti associati (trovati tramite array restaurantIds del Ristoratore o query inversa)
-                // Se usiamo restaurantIds salvato nel Restaurateur:
-                if (restaurateur.restaurantIds && restaurateur.restaurantIds.length > 0) {
-                    await Restaurant.deleteMany({ _id: { $in: restaurateur.restaurantIds } });
-                }
-
-                // 3. Elimina il profilo Ristoratore
-                await Restaurateur.findByIdAndDelete(restaurateur._id);
-            }
-        }
-
-        // Infine elimina l'utente User
-        await User.findByIdAndDelete(userId);
-
-        res.json({ success: true, message: 'Account eliminato definitivamente' });
-
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'Errore durante eliminazione', error: err.message });
+    if (!user) {
+      throw new Error('USER_NOT_FOUND');
     }
+
+    // Customer cascade
+    if (user.role === 'CUSTOMER') {
+
+      // Elimina profilo cliente
+      await Customer.findOneAndDelete({ userId }).session(session);
+
+      // Elimina ordini del cliente
+      await Order.deleteMany({ customerId: userId }).session(session);
+    }
+
+    // Restaurateur cascade
+    if (user.role === 'RESTAURATEUR') {
+
+      const restaurateur = await Restaurateur.findOne({ userId }).session(session);
+
+      if (restaurateur) {
+
+        // Trova risporanti
+        const restaurants = await Restaurant.find({
+          restaurateurId: restaurateur._id
+        }).session(session);
+        const restaurantIds = restaurants.map(r => r._id);
+        // Elimina menù
+        await Menu.deleteMany({
+          restaurantId: { $in: restaurantIds }
+        }).session(session);
+        // Elimina piatti
+        await Dish.deleteMany({
+          restaurantId: { $in: restaurantIds }
+        }).session(session);
+        // Elimina ristoranti
+        await Restaurant.deleteMany({
+          restaurateurId: restaurateur._id
+        }).session(session);
+        // Elimina profilo
+        await Restaurateur.findByIdAndDelete(restaurateur._id).session(session);
+      }
+    }
+
+    await User.findByIdAndDelete(userId).session(session);
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
+
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+
+    if (err.message === 'USER_NOT_FOUND') {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Error during account deletion'
+    });
+  }
 });
 
 module.exports = router;
