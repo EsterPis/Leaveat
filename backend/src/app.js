@@ -7,14 +7,14 @@
  * -E- Connects to MongoDB and starts the server on the specified port.
  */
 
-/*-A- IMPORT MODULES */
+/* A → IMPORT MODULES */
 require('dotenv').config();  //variabili di ambiente
 const express = require('express'); //middelware 
 const mongoose = require('mongoose'); //interfaccia con mongoDB
 const cors = require('cors'); //permette al frontend di comunicare con il backend senza blocchi di sicurezza
 const path = require('path'); //gestione dei percorsi
 
-/*-B- IMPORT MIDDLEWARE AND ROUTES */
+/* B → IMPORT MIDDLEWARE AND ROUTES */
 const { importMealsIfEmpty } = require('./utils/catalogSeeder');
 const authRoutes = require('./routes/auth'); 
 const customerRoutes = require('./routes/customers'); 
@@ -24,7 +24,7 @@ const dishRoutes = require('./routes/dishes');
 const categoryRoutes = require('./routes/categories');
 const orderRoutes = require('./routes/orders'); 
 
-/*-C- EXPRESS CONFIGURATION */
+/* C → EXPRESS CONFIGURATION */
 const app = express();
 app.use(cors());
 app.use(express.json()); //permette di leggere i dati in formato JSON
@@ -36,7 +36,7 @@ app.use('/', express.static(path.join(__dirname, '../../frontend')));
 //----------------IMMAGINE PROVVISORIA MODIFICARE----------------
 app.use('/data', express.static(path.join(__dirname, '../../data'))); //permette di accedere alla cartella data per le immagini caricate
 
-/*-D- API ROUTES */
+/* D → API ROUTES */
 app.use('/api/lv/users', authRoutes);
 app.use('/api/lv/categories', categoryRoutes);
 app.use('/api/lv/customers', customerRoutes);
@@ -45,7 +45,7 @@ app.use('/api/lv/restaurants', restaurantRoutes);
 app.use('/api/lv/dishes', dishRoutes);
 app.use('/api/lv/orders', orderRoutes);
 
-/*-E- START SERVER */
+/* E → START SERVER */
 const PORT = process.env.PORT || 3000;
 
 async function connectDB() {

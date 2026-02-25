@@ -2,36 +2,26 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
-// Import dei Modelli
 const Restaurant = require('../models/Restaurant');
 const Restaurateur = require('../models/Restaurateur');
 const Order = require('../models/Order');
-
-// Middleware di autenticazione
 const { authMiddleware, requireRole } = require('../middleware/auth');
 
-/* ==============================================
- * FUNZIONI DI UTILITÀ (HELPER)
- * ============================================== */
+/* A → UTILITY */
 
-// Verifica che il ristorante appartenga all'utente loggato
 async function checkOwnership(userId, restaurantId) {
-    // 1. Trovo il profilo del ristoratore collegato all'utente
-    const restaurateur = await Restaurateur.findOne({ userId: userId });
-    
+    const restaurateur = await Restaurateur.findOne({ userId });
     if (!restaurateur) return false;
 
-    // 2. Controllo se l'ID del ristorante è nella sua lista
-    // Nota: usiamo map(String) per confrontare le stringhe e non gli oggetti ObjectId
-    const ids = restaurateur.restaurantIds.map(id => id.toString());
-    return ids.includes(restaurantId.toString());
+    const restaurant = await Restaurant.findOne({
+        _id: restaurantId,
+        restaurateurId: restaurateur._id
+    });
+
+    return !!restaurant;
 }
 
-
-/* ==============================================
- * ROTTE PUBBLICHE (Visitor & Customer)
- * ============================================== */
-
+/* B → ROUTES */
 // GET /api/lv/restaurants
 // Restituisce la lista di tutti i ristoranti (es. per la Home Page)
 router.get('/', async (req, res) => {
@@ -55,7 +45,7 @@ router.get('/', async (req, res) => {
 // Restituisce SOLO i ristoranti dell'utente loggato (per la dashboard)
 router.get('/my-restaurants', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user.id;
 
         // Trovo il ristoratore
         const restaurateur = await Restaurateur.findOne({ userId });
@@ -63,9 +53,8 @@ router.get('/my-restaurants', authMiddleware, requireRole('RESTAURATEUR'), async
             return res.status(404).json({ success: false, message: 'Profilo ristoratore non trovato' });
         }
 
-        // Trovo tutti i ristoranti che hanno l'ID presente nell'array del ristoratore
         const myRestaurants = await Restaurant.find({
-            _id: { $in: restaurateur.restaurantIds }
+            restaurateurId: restaurateur._id
         });
 
         res.status(200).json({
@@ -78,12 +67,13 @@ router.get('/my-restaurants', authMiddleware, requireRole('RESTAURATEUR'), async
         res.status(500).json({ success: false, message: 'Errore server' });
     }
 });
+
 // GET /api/lv/restaurants/:id
 // Dettaglio singolo ristorante + Menù popolato (accesso privato per gestoione)
 router.get('/:id', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
     try {
         const restaurantId = req.params.id;
-        const userId = req.user.id || req.user.userId;
+        const userId = req.user.id;
 
         // 1. Verifica la proprietà (Ownership Check)
         // È fondamentale assicurarsi che il ristoratore stia gestendo il proprio ristorante
@@ -122,7 +112,7 @@ router.post('/', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) =
     session.startTransaction();
     
     try {
-        const userId = req.user.userId;
+        const userId = req.user.id;
         const rData = req.body;
 
         // 1. Trovo il ristoratore
@@ -133,6 +123,7 @@ router.post('/', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) =
 
         // 2. Creo il ristorante
         const newRestaurant = new Restaurant({
+            restaurateurId: restaurateur._id,
             legalName: rData.legalName,
             displayName: rData.displayName,
             phoneNumber: rData.phoneNumber,
@@ -147,10 +138,6 @@ router.post('/', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) =
 
         // Validazione automatica di Mongoose scatta qui
         await newRestaurant.save({ session });
-
-        // 3. Aggiungo l'ID del ristorante alla lista del ristoratore
-        restaurateur.restaurantIds.push(newRestaurant._id);
-        await restaurateur.save({ session });
 
         await session.commitTransaction();
         session.endSession();
@@ -179,7 +166,7 @@ router.put('/:id', authMiddleware, requireRole('RESTAURATEUR'), async (req, res)
     try {
         const { id } = req.params;
         const updates = req.body;
-        const userId = req.user.userId;
+        const userId = req.user.id;
 
         // 1. Controllo che il ristorante sia mio
         const isOwner = await checkOwnership(userId, id);
@@ -211,7 +198,7 @@ router.delete('/:id', authMiddleware, requireRole('RESTAURATEUR'), async (req, r
 
     try {
         const { id } = req.params;
-        const userId = req.user.userId;
+        const userId = req.user.id;
 
         // 1. Controllo proprietà
         const isOwner = await checkOwnership(userId, id);
@@ -222,7 +209,7 @@ router.delete('/:id', authMiddleware, requireRole('RESTAURATEUR'), async (req, r
         // 2. Controllo ordini attivi (Specifiche Tecniche: errore 409 se ordini attivi)
         const activeOrder = await Order.findOne({
             restaurantId: id,
-            status: { $in: ['ORDINATO', 'IN_PREPARAZIONE', 'IN_CONSEGNA'] }
+            status: { $in: ['ORDINATO', 'IN_PREPARAZIONE'] }
         }).session(session);
 
         if (activeOrder) {
@@ -232,13 +219,6 @@ router.delete('/:id', authMiddleware, requireRole('RESTAURATEUR'), async (req, r
 
         // 3. Rimuovo il ristorante
         await Restaurant.findByIdAndDelete(id).session(session);
-
-        // 4. Rimuovo il riferimento dal Ristoratore
-        await Restaurateur.findOneAndUpdate(
-            { userId: userId },
-            { $pull: { restaurantIds: id } }
-        ).session(session);
-
         await session.commitTransaction();
         session.endSession();
 

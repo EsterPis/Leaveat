@@ -1,20 +1,28 @@
+/**
+ * restaurateurs.js
+ * Handles RESTAURATEUR profile completion.
+ * 
+ * This route allows an authenticated user with role "RESTAURATEUR"
+ * to complete their registration by:
+ *  - Creating the Restaurateur profile with fiscal information
+ *  - Creating an associated Restaurant
+ *  - Creating or importing a related Menu
+ *
+ * Business logic is delegated to the restaurateurService layer.
+ */
+
 const express = require('express');
 const router = express.Router();
-const { completeRegistration } = require('../utils/restaurateurService');
+const { completeRegistration } = require('../utils/restaurateurService'); //logica di completamento registrazione
 const { authMiddleware, requireRole } = require('../middleware/auth');
 
-// POST /api/lv/restaurateurs/complete-registration
-// Completa il profilo del ristoratore creando:
-// - dati fiscali del Restaurateur
-// - un ristorante collegato
-// - il relativo menù (nuovo o importato)
 router.post(
   '/complete-registration',
   authMiddleware,
   requireRole('RESTAURATEUR'),
   async (req, res) => {
     try {
-      const userId = req.user.id || req.user.userId; // dipende da come hai popolato req.user nel middleware
+      const userId = req.user.id; // dipende da come hai popolato req.user nel middleware
       const data = req.body;
 
       const result = await completeRegistration(userId, data);

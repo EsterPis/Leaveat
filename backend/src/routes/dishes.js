@@ -156,7 +156,7 @@ router.post('/import', authMiddleware, async (req, res) => {
     }
 
     // 1. Verifica che il ristorante appartenga al ristoratore loggato
-    const restaurateur = await Restaurateur.findOne({ userId: req.user.userId || req.user.id });
+    const restaurateur = await Restaurateur.findOne({ userId: req.user.id });
     if (!restaurateur || !restaurateur.restaurantIds.map(String).includes(restaurantId)) {
       throw new Error('Non sei autorizzato a gestire questo ristorante');
     }
@@ -212,7 +212,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
     if (!dish) return res.status(404).json({ success: false, message: 'Piatto non trovato' });
 
     // 1. Controllo Proprietà: Usiamo userId dal tuo token
-    const restaurateur = await Restaurateur.findOne({ userId: req.user.userId });
+    const restaurateur = await Restaurateur.findOne({ userId: req.user.id });
 
     // Verifichiamo se il restaurantId del piatto è presente tra quelli del ristoratore
     const isOwner = restaurateur && restaurateur.restaurantIds.some(id => id.toString() === dish.restaurantId?.toString());
@@ -270,15 +270,15 @@ router.put('/:id', authMiddleware, async (req, res) => {
 });*/
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    console.log("DEBUG DELETE - ID Utente dal token:", req.user.userId);
+    console.log("DEBUG DELETE - ID Utente dal token:", req.user.id);
 
     const dish = await Dish.findById(req.params.id);
     if (!dish) return res.status(404).json({ success: false, message: 'Piatto non trovato' });
 
-    const restaurateur = await Restaurateur.findOne({ userId: req.user.userId });
+    const restaurateur = await Restaurateur.findOne({ userId: req.user.id});
 
     if (!restaurateur) {
-      console.log("DEBUG DELETE - Ristoratore non trovato per userId:", req.user.userId);
+      console.log("DEBUG DELETE - Ristoratore non trovato per userId:", req.user.id);
       return res.status(403).json({ success: false, message: 'Profilo ristoratore non trovato' });
     }
 

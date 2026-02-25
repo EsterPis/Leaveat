@@ -19,7 +19,7 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
     session.startTransaction();
 
     try {
-        const customerId = req.user.userId || req.user.id; // Dal token
+        const customerId = req.user.id; // Dal token
         const { restaurantId, items } = req.body; // items = [{ dishId, quantity }]
 
         if (!items || items.length === 0) {
@@ -151,7 +151,7 @@ router.patch('/:id/status', authMiddleware, requireRole('RESTAURATEUR'), async (
 // GET /api/lv/orders/my-orders
 router.get('/my-orders', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
     try {
-        const customerId = req.user.userId || req.user.id;
+        const customerId = req.user.id;
 
         const orders = await Order.find({ customerId: customerId })
             .sort({ createdAt: -1 })

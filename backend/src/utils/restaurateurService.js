@@ -1,159 +1,201 @@
+/**
+ * restaurateurService.js
+ * Handles the business logic for completing the restaurateur registration process.
+ * 
+ * Responsibilities:
+ *  - Validate fiscal and restaurant data
+ *  - Create or update the Restaurateur profile
+ *  - Create the Restaurant entity
+ *  - Handle custom and catalog dishes
+ *  - Create the Menu and link it to the Restaurant
+ *  - Execute the entire flow inside a MongoDB transaction
+ */
 const mongoose = require('mongoose');
 const Restaurateur = require('../models/Restaurateur');
 const Restaurant = require('../models/Restaurant');
 const Menu = require('../models/Menu');
-const Dish = require('../models/Dish'); // <--- MANCAVA QUESTO IMPORT
+const Dish = require('../models/Dish');
 
-// Utility
+/* A → UTILITY */
 function isEmpty(value) {
   return !value || !value.toString().trim();
 }
 
-// Validazioni (invariate)
+/* B → VALIDATION */
+// Validates mandatory fiscal data 
 function validateFiscalData(data) {
   const { VATNumber, legalRepresentativeName, adminEmail, bankAccountHolder, IBAN } = data;
+
   if ([VATNumber, legalRepresentativeName, adminEmail, bankAccountHolder, IBAN].some(isEmpty)) {
-    throw new Error('Compila tutti i campi dei dati fiscali.');
+    throw new Error('All fiscal fields must be completed.');
   }
 }
 
+// Validates mandatory restaurant data.
 function validateRestaurantData(rData) {
-  if (!rData) throw new Error('Dati ristorante mancanti.');
+  if (!rData) throw new Error('Restaurant data missing.');
+
   const requiredFields = [
-    rData.legalName, rData.displayName, rData.phoneNumber, rData.openingHours,
-    rData?.address?.street, rData?.address?.number, rData?.address?.zip, 
-    rData?.address?.city, rData?.address?.province
+    rData.legalName,
+    rData.displayName,
+    rData.phoneNumber,
+    rData.openingHours,
+    rData?.address?.street,
+    rData?.address?.number,
+    rData?.address?.zip,
+    rData?.address?.city,
+    rData?.address?.province
   ];
+
   if (requiredFields.some(isEmpty)) {
-    throw new Error('Compila tutti i campi obbligatori del ristorante.');
+    throw new Error('All mandatory restaurant fields must be completed.');
   }
 }
+
+/* C → MAIN SERVICE FUNCTIONS */
+// Creates or updates the Restaurateur profile 
+async function createOrUpdateRestaurateur(userId, fiscalData, session) {
+  let restaurateur = await Restaurateur.findOne({ userId }).session(session);
+
+  if (!restaurateur) {
+    const created = await Restaurateur.create([{
+      userId,
+      ...fiscalData
+    }], { session });
+
+    restaurateur = created[0];
+  } else {
+    Object.assign(restaurateur, fiscalData);
+    await restaurateur.save({ session });
+  }
+
+  return restaurateur;
+}
+
+
+// Creates a Restaurant linked to the Restaurateur
+async function createRestaurant(restaurateurId, rData, session) {
+  const created = await Restaurant.create([{
+    restaurateurId,
+    legalName: rData.legalName,
+    displayName: rData.displayName,
+    phoneNumber: rData.phoneNumber,
+    email: rData.email,
+    address: rData.address,
+    openingHours: rData.openingHours,
+    description: rData.description,
+    websiteUrl: rData.websiteUrl,
+    imageUrl: rData.imageUrl,
+    status: 'DRAFT'
+  }], { session });
+
+  return created[0];
+}
+
+// Creates custom dishes 
+async function createCustomDishes(menuData, restaurantId, session) {
+  const customDishes = menuData.customDishes || [];
+  const createdIds = [];
+
+  if (customDishes.length > 0) {
+    const docs = customDishes.map(d => ({
+      name: d.name,
+      category: d.category,
+      price: d.price,
+      ingredients: d.ingredients,
+      description: d.description,
+      image: d.imageUrl,
+      restaurantId,
+      source: 'restaurant'
+    }));
+
+    const saved = await Dish.create(docs, { session });
+    saved.forEach(d => createdIds.push(d._id));
+  }
+
+  return createdIds;
+}
+
+// Clones dishes from the catalog
+async function cloneCatalogDishes(menuData, restaurantId, session) {
+  const catalogItems = menuData.fromCatalog || [];
+  const clonedIds = [];
+
+  for (const item of catalogItems) {
+    const original = await Dish.findById(item.dishId).session(session);
+
+    if (!original) continue;
+
+    const clone = new Dish({
+      name: original.name,
+      category: original.category,
+      area: original.area,
+      instructions: original.instructions,
+      image: original.image,
+      ingredients: original.ingredients,
+      measures: original.measures,
+      price: item.price,
+      restaurantId,
+      source: 'restaurant',
+      externalId: original.externalId
+    });
+
+    await clone.save({ session });
+    clonedIds.push(clone._id);
+  }
+
+  return clonedIds;
+}
+
+// Creates the Menu and links it to the Restaurant
+async function createMenu(restaurantId, dishIds, session) {
+  const created = await Menu.create([{
+    restaurantId,
+    dishIds
+  }], { session });
+
+  return created[0];
+}
+
 
 async function completeRegistration(userId, payload) {
   const session = await mongoose.startSession();
   session.startTransaction();
-
   try {
     const {
-      VATNumber, legalRepresentativeName, adminEmail, bankAccountHolder, IBAN,
+      VATNumber,
+      legalRepresentativeName,
+      adminEmail,
+      bankAccountHolder,
+      IBAN,
       restaurant: rData,
       menu
     } = payload;
 
-    // 1. Validazione
     validateFiscalData({ VATNumber, legalRepresentativeName, adminEmail, bankAccountHolder, IBAN });
     validateRestaurantData(rData);
 
-    if (!menu) throw new Error('Dati menù mancanti.');
+    if (!menu) throw new Error('Menu data missing.');
 
-    // 2. Gestione Ristoratore (Trova o Crea)
-    let rest = await Restaurateur.findOne({ userId }).session(session);
-    if (!rest) {
-      const created = await Restaurateur.create([{
-        userId, VATNumber, legalRepresentativeName, adminEmail, bankAccountHolder, IBAN,
-        restaurantIds: []
-      }], { session });
-      rest = created[0];
-    } else {
-      // Aggiorna esistente
-      rest.VATNumber = VATNumber;
-      rest.legalRepresentativeName = legalRepresentativeName;
-      rest.adminEmail = adminEmail;
-      rest.bankAccountHolder = bankAccountHolder;
-      rest.IBAN = IBAN;
-      await rest.save({ session });
-    }
+    const fiscalData = { VATNumber, legalRepresentativeName, adminEmail, bankAccountHolder, IBAN };
+    const restaurateur = await createOrUpdateRestaurateur(userId, fiscalData, session);
+    const restaurant = await createRestaurant(restaurateur._id, rData, session);
+    const customDishIds = await createCustomDishes(menu, restaurant._id, session);
+    const catalogDishIds = await cloneCatalogDishes(menu, restaurant._id, session);
+    const allDishIds = [...customDishIds, ...catalogDishIds];
+    const menuDoc = await createMenu(restaurant._id, allDishIds, session);
 
-    // 3. Crea il Ristorante
-    const createdRestaurant = await Restaurant.create([{
-      legalName: rData.legalName,
-      displayName: rData.displayName,
-      phoneNumber: rData.phoneNumber,
-      email: rData.email,
-      address: rData.address,
-      openingHours: rData.openingHours,
-      description: rData.description,
-      websiteUrl: rData.websiteUrl,
-      imageUrl: rData.imageUrl,
-      status: 'DRAFT', // Rimane DRAFT finché non colleghiamo il menu
-    }], { session });
-
-    const restaurantDoc = createdRestaurant[0];
-
-    // Collega ristorante al ristoratore
-    rest.restaurantIds.push(restaurantDoc._id);
-    await rest.save({ session });
-
-    // 4. GESTIONE PIATTI E MENU (La parte corretta)
-    let finalDishIds = [];
-
-    // A) Piatti Custom (Nuovi inseriti a mano)
-    if (menu.customDishes && menu.customDishes.length > 0) {
-      const customDishesDocs = menu.customDishes.map(d => ({
-        name: d.name,
-        category: d.category,
-        price: d.price,
-        ingredients: d.ingredients,
-        description: d.description,
-        image: d.imageUrl,
-        restaurantId: restaurantDoc._id, // Importante: colleghiamo al ristorante
-        source: 'restaurant'
-      }));
-      
-      const savedCustomDishes = await Dish.create(customDishesDocs, { session });
-      savedCustomDishes.forEach(d => finalDishIds.push(d._id));
-    }
-
-    // B) Piatti dal Catalogo (Bisogna clonarli/referenziarli)
-    // Nota: Nelle specifiche si dice di creare una copia personalizzata
-    if (menu.fromCatalog && menu.fromCatalog.length > 0) {
-       for (const item of menu.fromCatalog) {
-          // Recuperiamo il piatto originale per copiare i dati base (nome, ingredienti, ecc)
-          const originalDish = await Dish.findById(item.dishId).session(session);
-          
-          if (originalDish) {
-              const catalogCopy = new Dish({
-                  name: originalDish.name,
-                  category: originalDish.category,
-                  area: originalDish.area,
-                  instructions: originalDish.instructions,
-                  image: originalDish.image,
-                  ingredients: originalDish.ingredients,
-                  measures: originalDish.measures,
-                  // Usiamo il prezzo deciso dal ristoratore, non quello base
-                  price: item.price, 
-                  restaurantId: restaurantDoc._id,
-                  source: 'restaurant', // Diventa un piatto del ristorante
-                  externalId: originalDish.externalId // Manteniamo ref se serve
-              });
-              
-              await catalogCopy.save({ session });
-              finalDishIds.push(catalogCopy._id);
-          }
-       }
-    }
-
-    // 5. Crea il Menù con gli ID raccolti
-    const createdMenu = await Menu.create([{
-      restaurantIds: [restaurantDoc._id],
-      restaurateurId: rest._id,
-      dishIds: finalDishIds, // Ora l'array è pieno!
-    }], { session });
-
-    const menuDoc = createdMenu[0];
-
-    // 6. Aggiorna Ristorante (Attiva e collega menu)
-    restaurantDoc.menuId = menuDoc._id;
-    restaurantDoc.status = 'ACTIVE';
-    await restaurantDoc.save({ session });
+    restaurant.menuId = menuDoc._id;
+    restaurant.status = 'ACTIVE';
+    await restaurant.save({ session });
 
     await session.commitTransaction();
     session.endSession();
 
     return {
-      restaurateurId: rest._id,
-      restaurantId: restaurantDoc._id,
-      menuId: menuDoc._id,
+      restaurateurId: restaurateur._id,
+      restaurantId: restaurant._id,
+      menuId: menuDoc._id
     };
 
   } catch (err) {

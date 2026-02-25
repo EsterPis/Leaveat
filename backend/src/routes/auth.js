@@ -11,28 +11,33 @@ const Restaurant = require('../models/Restaurant');
 const Menu = require('../models/Menu');
 
 function signToken(user) {
-  const payload = { userId: user._id.toString(), email: user.email, role: user.role, firstName: user.firstName };
-  const secret = process.env.JWT_SECRET || 'devsecret'; 
-  return jwt.sign(payload, secret, { expiresIn: '24h' });
+    const payload = {
+        id: user._id.toString(),
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName
+    };
+    const secret = process.env.JWT_SECRET || 'devsecret';
+    return jwt.sign(payload, secret, { expiresIn: '24h' });
 }
 
 router.post('/register', async (req, res) => {
     try {
         const { firstName, lastName, email, phoneNumber, password, role } = req.body;
-        if (!email || !password || !firstName || !lastName || !phoneNumber ) return res.status(400).json({ success: false, message: 'Compilare tutti i campi' });
-        
+        if (!email || !password || !firstName || !lastName || !phoneNumber) return res.status(400).json({ success: false, message: 'Compilare tutti i campi' });
+
         let exists = await User.findOne({ email });
         if (exists) return res.status(409).json({ success: false, message: 'Email già registrata' });
         exists = await User.findOne({ phoneNumber });
         if (exists) return res.status(409).json({ success: false, message: 'Numero di telefono già registrato' });
-    
+
         const user = await User.create({ firstName, lastName, email, phoneNumber, password, role: role || 'CUSTOMER' });
-        
+
         if (user.role === 'CUSTOMER') {
             await Customer.create({ userId: user._id });
         } else if (user.role === 'RESTAURATEUR') {
-            await Restaurateur.create({ 
-                userId: user._id, 
+            await Restaurateur.create({
+                userId: user._id,
                 VATNumber: "DA_COMPLETARE_" + user._id, // Placeholder temporaneo
                 legalRepresentativeName: user.firstName + " " + user.lastName,
                 adminEmail: user.email,
@@ -43,9 +48,9 @@ router.post('/register', async (req, res) => {
 
         const token = signToken(user);
         return res.status(201).json({ success: true, data: { token, userId: user._id, role: user.role } });
-      } catch (err) {
+    } catch (err) {
         return res.status(500).json({ success: false, message: 'Errore server', error: err.message });
-      }
+    }
 });
 
 router.post('/login', async (req, res) => {
@@ -54,21 +59,21 @@ router.post('/login', async (req, res) => {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
         if (!user) return res.status(401).json({ success: false, message: 'Utente non trovato' });
-    
+
         const ok = await user.comparePassword(password);
         if (!ok) return res.status(401).json({ success: false, message: 'Password errata' });
-    
+
         const token = signToken(user);
         return res.json({ success: true, data: { token } });
-      } catch (err) {
+    } catch (err) {
         return res.status(500).json({ success: false, message: 'Errore server', error: err.message });
-      }
+    }
 });
 
 
 router.get('/me', authMiddleware, async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId).select('-password');
+        const user = await User.findById(req.user.id).select('-password');
         if (!user) return res.status(404).json({ success: false, message: 'Utente non trovato' });
 
         let profile = null;
@@ -81,10 +86,10 @@ router.get('/me', authMiddleware, async (req, res) => {
         }
 
         // Restituisce un oggetto unico con tutto
-        res.json({ 
-            success: true, 
-            user: user, 
-            profile: profile 
+        res.json({
+            success: true,
+            user: user,
+            profile: profile
         });
 
     } catch (err) {
@@ -96,14 +101,14 @@ router.get('/me', authMiddleware, async (req, res) => {
 router.put('/me', authMiddleware, async (req, res) => {
     try {
         const updates = req.body; // { firstName, lastName, phoneNumber ... }
-        
+
         // Evitiamo che l'utente cambi ruolo o email da qui per sicurezza semplificata
         delete updates.role;
-        delete updates.email; 
+        delete updates.email;
         delete updates.password; // La password richiederebbe gestione a parte con hash
 
-        const user = await User.findByIdAndUpdate(req.user.userId, updates, { new: true }).select('-password');
-        
+        const user = await User.findByIdAndUpdate(req.user.id, updates, { new: true }).select('-password');
+
         res.json({ success: true, user });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Errore aggiornamento', error: err.message });
@@ -113,7 +118,7 @@ router.put('/me', authMiddleware, async (req, res) => {
 // 3. DELETE /me - Elimina account e dati collegati
 router.delete('/me', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user.id;
         const user = await User.findById(userId);
 
         if (!user) return res.status(404).json({ success: false, message: 'Utente non trovato' });
@@ -121,21 +126,21 @@ router.delete('/me', authMiddleware, async (req, res) => {
         if (user.role === 'CUSTOMER') {
             // Elimina profilo cliente
             await Customer.findOneAndDelete({ userId: userId });
-        } 
+        }
         else if (user.role === 'RESTAURATEUR') {
             // CASCATA: Elimina profilo ristoratore, menu e ristoranti
             const restaurateur = await Restaurateur.findOne({ userId: userId });
-            
+
             if (restaurateur) {
                 // 1. Elimina i Menu associati a questo ristoratore
                 await Menu.deleteMany({ restaurateurId: restaurateur._id });
-                
+
                 // 2. Elimina i Ristoranti associati (trovati tramite array restaurantIds del Ristoratore o query inversa)
                 // Se usiamo restaurantIds salvato nel Restaurateur:
                 if (restaurateur.restaurantIds && restaurateur.restaurantIds.length > 0) {
                     await Restaurant.deleteMany({ _id: { $in: restaurateur.restaurantIds } });
                 }
-                
+
                 // 3. Elimina il profilo Ristoratore
                 await Restaurateur.findByIdAndDelete(restaurateur._id);
             }
