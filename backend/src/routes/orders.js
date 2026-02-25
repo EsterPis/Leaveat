@@ -27,7 +27,6 @@ async function verifyRestaurantOwnership(userId, restaurantId) {
 
 
 /* B → CUSTOMER ORDER CREATION */
-
 // POST /api/lv/orders
 // Creates a new order from customer cart
 router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
@@ -36,39 +35,74 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
   session.startTransaction();
 
   try {
+
     const customerId = req.user.id;
     const { restaurantId, items } = req.body;
 
+    /* ---------------- VALIDAZIONI BASE ---------------- */
+
     if (!restaurantId) {
-      throw new Error('restaurantId is required');
+      return res.status(400).json({
+        success: false,
+        message: 'restaurantId is required'
+      });
     }
 
-    if (!items || items.length === 0) {
-      throw new Error('Cart is empty');
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cart is empty'
+      });
     }
 
     const restaurant = await Restaurant.findById(restaurantId).session(session);
     if (!restaurant) {
-      throw new Error('Restaurant not found');
+      return res.status(404).json({
+        success: false,
+        message: 'Restaurant not found'
+      });
     }
 
     let totalPrice = 0;
     const orderItems = [];
 
+    /* ---------------- CONTROLLO PIATTI ---------------- */
+
     for (const item of items) {
+
+      if (!item.dishId) {
+        return res.status(400).json({
+          success: false,
+          message: 'dishId is required'
+        });
+      }
 
       const dish = await Dish.findById(item.dishId).session(session);
 
       if (!dish) {
-        throw new Error(`Dish ${item.dishId} not found`);
+        return res.status(404).json({
+          success: false,
+          message: `Dish ${item.dishId} not found`
+        });
       }
 
-      // Ensure dish belongs to the selected restaurant
+      // Ensure dish belongs to selected restaurant
       if (dish.restaurantId?.toString() !== restaurantId) {
-        throw new Error('Dish does not belong to selected restaurant');
+        return res.status(400).json({
+          success: false,
+          message: 'Dish does not belong to selected restaurant'
+        });
       }
 
       const quantity = item.quantity || 1;
+
+      if (quantity <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid quantity'
+        });
+      }
+
       totalPrice += dish.price * quantity;
 
       orderItems.push({
@@ -76,6 +110,8 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
         quantity
       });
     }
+
+    /* ---------------- CREAZIONE ORDINE ---------------- */
 
     const newOrder = new Order({
       customerId,
@@ -90,24 +126,25 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: newOrder,
       message: 'Order created successfully'
     });
 
   } catch (err) {
+
     await session.abortTransaction();
     session.endSession();
 
-    res.status(400).json({
+    console.error(err);
+
+    return res.status(500).json({
       success: false,
-      message: err.message
+      message: 'Internal server error'
     });
   }
 });
-
-
 /* C → RESTAURATEUR ORDER MANAGEMENT */
 
 // GET /api/lv/orders/restaurant/:restaurantId
@@ -161,11 +198,24 @@ router.patch('/:id/status', authMiddleware, requireRole('RESTAURATEUR'), async (
     }
 
     const order = await Order.findById(id);
-
     if (!order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
+      });
+    }
+
+    const transitions = {
+      ORDINATO: ['IN_PREPARAZIONE', 'ANNULLATO'],
+      IN_PREPARAZIONE: ['CONSEGNATO'],
+      CONSEGNATO: [],
+      ANNULLATO: []
+    };
+
+    if (!transitions[order.status].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid transition from ${order.status} to ${status}`
       });
     }
 
@@ -211,6 +261,55 @@ router.get('/my-orders', authMiddleware, requireRole('CUSTOMER'), async (req, re
 
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PATCH /api/lv/orders/:id/cancel
+// Allows customer to cancel an order only if status is ORDINATO
+router.patch('/:id/cancel', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const customerId = req.user.id;
+
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Ensure order belongs to logged customer
+    if (order.customerId.toString() !== customerId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized order access'
+      });
+    }
+
+    // Only allow cancel if still ORDINATO
+    if (order.status !== 'ORDINATO') {
+      return res.status(400).json({
+        success: false,
+        message: 'Order cannot be cancelled at this stage'
+      });
+    }
+
+    order.status = 'ANNULLATO';
+    await order.save();
+
+    res.json({
+      success: true,
+      message: 'Order cancelled successfully',
+      data: order
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 });
 
