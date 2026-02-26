@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leaveat • Carrello</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+
+<body>
+
+<!-- ================= NAVBAR ================= -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand" href="/index.html">Leaveat</a>
+
+    <div class="d-flex align-items-center gap-3">
+
+      <!-- Carrello -->
+      <a href="/cart.html" class="btn btn-outline-light position-relative">
+        <i class="bi bi-cart3"></i>
+        <span id="cart-count"
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+          0
+        </span>
+      </a>
+
+      <!-- Sezione utente -->
+      <div class="user-section"></div>
+
+    </div>
+  </div>
+</nav>
+
+<!-- ================= CONTENUTO ================= -->
+<main class="container py-4">
+
+  <h2 class="mb-4">Il tuo carrello</h2>
+
+  <div id="cartContainer"></div>
+
+  <div id="cartSummary" class="mt-4"></div>
+
+</main>
+
+<script>
+
+// ================= UTIL CARRELLO =================
+
+function getCart() {
+  return JSON.parse(localStorage.getItem("cart")) || null;
+}
+
+function saveCart(cart) {
+  localStorage.setItem("cart", JSON.stringify(cart));
+  updateCartBadge();
+}
+
+function updateCartBadge() {
+  const badge = document.getElementById("cart-count");
+  const cart = getCart();
+
+  if (!badge) return;
+
+  if (!cart || !cart.items.length) {
+    badge.textContent = 0;
+    return;
+  }
+
+  const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+  badge.textContent = totalItems;
+}
+
+// ================= RENDER CARRELLO =================
+
+function renderCart() {
+  const cart = getCart();
+  const container = document.getElementById("cartContainer");
+  const summary = document.getElementById("cartSummary");
+
+  container.innerHTML = "";
+  summary.innerHTML = "";
+
+  if (!cart || !cart.items.length) {
+    container.innerHTML = `
+      <div class="alert alert-info">
+        Il carrello è vuoto.
+      </div>
+    `;
+    return;
+  }
+
+  let total = 0;
+
+  cart.items.forEach(item => {
+
+    const itemTotal = item.price * item.quantity;
+    total += itemTotal;
+
+    const row = document.createElement("div");
+    row.className = "card mb-3";
+
+    row.innerHTML = `
+      <div class="card-body d-flex justify-content-between align-items-center">
+
+        <div>
+          <h5 class="mb-1">${item.name}</h5>
+          <small class="text-muted">€ ${item.price.toFixed(2)}</small>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+
+          <button class="btn btn-sm btn-outline-secondary"
+                  onclick="changeQuantity('${item.dishId}', -1)">
+            -
+          </button>
+
+          <span>${item.quantity}</span>
+
+          <button class="btn btn-sm btn-outline-secondary"
+                  onclick="changeQuantity('${item.dishId}', 1)">
+            +
+          </button>
+
+          <button class="btn btn-sm btn-outline-danger"
+                  onclick="removeItem('${item.dishId}')">
+            <i class="bi bi-trash"></i>
+          </button>
+
+        </div>
+
+      </div>
+    `;
+
+    container.appendChild(row);
+  });
+
+  summary.innerHTML = `
+    <div class="card">
+      <div class="card-body d-flex justify-content-between align-items-center">
+
+        <h4>Totale: € ${total.toFixed(2)}</h4>
+
+        <button class="btn btn-success"
+                onclick="confirmOrder()">
+          Conferma Ordine
+        </button>
+
+      </div>
+    </div>
+  `;
+}
+
+// ================= MODIFICA QUANTITÀ =================
+
+function changeQuantity(dishId, delta) {
+  const cart = getCart();
+  if (!cart) return;
+
+  const item = cart.items.find(i => i.dishId === dishId);
+  if (!item) return;
+
+  item.quantity += delta;
+
+  if (item.quantity <= 0) {
+    cart.items = cart.items.filter(i => i.dishId !== dishId);
+  }
+
+  saveCart(cart);
+  renderCart();
+}
+
+function removeItem(dishId) {
+  const cart = getCart();
+  if (!cart) return;
+
+  cart.items = cart.items.filter(i => i.dishId !== dishId);
+
+  saveCart(cart);
+  renderCart();
+}
+
+// ================= CONFERMA ORDINE =================
+
+async function confirmOrder() {
+
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+
+  if (!token) {
+    alert("Devi effettuare il login per confermare l'ordine.");
+    window.location.href = "/login.html";
+    return;
+  }
+
+  if (role !== "CUSTOMER") {
+    alert("Solo i clienti possono effettuare ordini.");
+    return;
+  }
+
+  const cart = getCart();
+  if (!cart || !cart.items.length) return;
+
+  try {
+
+    const response = await fetch("/api/lv/orders", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      body: JSON.stringify({
+        restaurantId: cart.restaurantId,
+        items: cart.items.map(i => ({
+          dishId: i.dishId,
+          quantity: i.quantity
+        }))
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Errore creazione ordine");
+    }
+
+    alert("Ordine effettuato con successo!");
+
+    localStorage.removeItem("cart");
+    updateCartBadge();
+    renderCart();
+
+  } catch (err) {
+    console.error(err);
+    alert("Errore durante la creazione dell'ordine.");
+  }
+}
+
+// ================= INIT =================
+
+updateCartBadge();
+renderCart();
+
+</script>
+
+<script src="/js/session.js"></script>
+
+</body>
+</html>
