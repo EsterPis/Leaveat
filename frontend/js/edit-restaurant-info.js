@@ -23,9 +23,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         form.style.display = 'none';
     };
 
-    // 2. Caricamento Dati Esistenti (GET /api/lv/restaurants/:id)
+    // 2. Caricamento Dati Esistenti (GET /api/lv/restaurants/:id/manage)
     try {
-        const response = await fetch(`/api/lv/restaurants/${restaurantId}`, {
+        const response = await fetch(`/api/lv/restaurants/${restaurantId}/manage`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
         });

@@ -25,8 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // FUNZIONE 1: Carica Dettagli e Menù
 async function loadRestaurantDetails() {
     try {
-        // Chiama la rotta GET /api/lv/restaurants/:id
-        const response = await fetch(`/api/lv/restaurants/${restaurantId}`, {
+        // Chiama la rotta GET /api/lv/restaurants/:id/manage
+        const response = await fetch(`/api/lv/restaurants/${restaurantId}/manage`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 

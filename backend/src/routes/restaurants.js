@@ -69,8 +69,45 @@ router.get('/my-restaurants', authMiddleware, requireRole('RESTAURATEUR'), async
 });
 
 // GET /api/lv/restaurants/:id
+router.get('/:id', async (req, res) => {
+    try {
+        const restaurantId = req.params.id;
+
+        // Recupero ristorante con popolamento menu e piatti
+        const restaurant = await Restaurant.findById(restaurantId)
+            .populate({
+                path: 'menuId',
+                populate: {
+                    path: 'dishIds'
+                }
+            })
+            .exec();
+
+        // Se non esiste
+        if (!restaurant) {
+            return res.status(404).json({
+                success: false,
+                message: 'Ristorante non trovato.'
+            });
+        }
+
+        // Risposta pubblica
+        return res.status(200).json({
+            success: true,
+            data: restaurant
+        });
+
+    } catch (err) {
+        console.error('Errore nel recupero pubblico del ristorante:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Errore interno del server.'
+        });
+    }
+});
+
 // Dettaglio singolo ristorante + Menù popolato (accesso privato per gestoione)
-router.get('/:id', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
+router.get('/:id/manage', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
     try {
         const restaurantId = req.params.id;
         const userId = req.user.id;
