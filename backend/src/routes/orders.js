@@ -248,11 +248,16 @@ router.patch('/:id/status', authMiddleware, requireRole('RESTAURATEUR'), async (
 // Returns logged customer order history
 router.get('/my-orders', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
   try {
+
     const customerId = req.user.id;
 
     const orders = await Order.find({ customerId })
       .sort({ createdAt: -1 })
-      .populate('restaurantId', 'displayName address');
+      .populate('restaurantId', 'displayName address')
+      .populate({
+        path: 'items.dishId',
+        select: 'name price image'   // selezioniamo solo ciò che serve
+      });
 
     res.json({
       success: true,
