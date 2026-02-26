@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="it">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Leaveat • Dettagli Ristorante</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+
+<body>
+
+    <!-- ================= NAVBAR ================= -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+
+            <a class="navbar-brand" href="/index.html">Leaveat</a>
+
+            <div class="d-flex align-items-center gap-3">
+
+                <!-- Carrello -->
+                <a href="/cart.html" class="btn btn-outline-light position-relative">
+                    <i class="bi bi-cart3"></i>
+                    <span id="cart-count"
+                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        0
+                    </span>
+                </a>
+                <div class="ms-2 user-section"></div>
+
+            </div>
+
+        </div>
+    </nav>
+
+    <!-- ================= CONTENUTO ================= -->
+    <main class="container py-4">
+
+        <!-- Sezione info ristorante -->
+        <div id="restaurantInfo" class="mb-5"></div>
+
+        <hr>
+
+        <!-- Sezione menu -->
+        <h3 class="mb-3">Menu</h3>
+        <div id="menuContainer" class="row g-3"></div>
+
+    </main>
+
+    <script>
+        // ----------------------------------------------------
+        // Recupera ID dalla query string
+        // ----------------------------------------------------
+        function getRestaurantId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        // ----------------------------------------------------
+        // Carica dettagli ristorante
+        // ----------------------------------------------------
+        async function loadRestaurant() {
+            const restaurantId = getRestaurantId();
+
+            if (!restaurantId) {
+                alert("Ristorante non valido.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/lv/restaurants/${restaurantId}`);
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+
+                const restaurant = result.data;
+
+                renderRestaurantInfo(restaurant);
+                renderMenu(restaurant.menuId?.dishIds || []);
+
+            } catch (err) {
+                console.error("Errore caricamento ristorante:", err);
+                alert("Errore nel caricamento del ristorante.");
+            }
+        }
+
+        // ----------------------------------------------------
+        // Rendering info ristorante
+        // ----------------------------------------------------
+        function renderRestaurantInfo(r) {
+
+            const container = document.getElementById('restaurantInfo');
+
+            const name = r.displayName || r.legalName || "Ristorante";
+
+            const address = r.address
+                ? `${r.address.street} ${r.address.number}, ${r.address.city} (${r.address.province})`
+                : "Indirizzo non disponibile";
+
+            const imageSrc = (r.imageUrl && r.imageUrl.trim() !== "")
+                ? r.imageUrl
+                : "/assets/logo-default.jpg";
+
+            container.innerHTML = `
+    <div class="card shadow-sm">
+      <img src="${imageSrc}"
+           onerror="this.src='/assets/logo-default.jpg'"
+           class="card-img-top"
+           alt="${name}"
+           style="height:250px; object-fit:cover;">
+
+      <div class="card-body">
+        <h2 class="card-title">${name}</h2>
+
+        <p class="text-muted mb-2">
+          ${address}
+        </p>
+
+        <p class="mb-1">
+          <strong>Telefono:</strong> ${r.phoneNumber || "Non disponibile"}
+        </p>
+
+        <p class="mb-0">
+          <strong>Email:</strong> ${r.email || "Non disponibile"}
+        </p>
+      </div>
+    </div>
+  `;
+        }
+
+        // ----------------------------------------------------
+        // Rendering menu piatti
+        // ----------------------------------------------------
+        function renderMenu(dishes) {
+            window.currentDishes = dishes;
+            console.log(dishes);
+            const container = document.getElementById('menuContainer');
+            container.innerHTML = '';
+
+            if (!dishes.length) {
+                container.innerHTML = `
+      <div class="col-12">
+        <div class="alert alert-info">
+          Nessun piatto disponibile.
+        </div>
+      </div>
+    `;
+                return;
+            }
+
+            dishes.forEach(d => {
+
+                const imageSrc = (d.image && d.image.trim() !== "")
+                    ? d.image
+                    : "/assets/logo-default.png";
+
+                const col = document.createElement('div');
+                col.className = 'col-12 col-md-6 col-lg-4';
+
+                col.innerHTML = `
+      <div class="card h-100 shadow-sm">
+
+        <img src="${imageSrc}"
+             onerror="this.src='/assets/logo-default.jpg'"
+             class="card-img-top"
+             alt="${d.name}"
+             style="height:200px; object-fit:cover;">
+
+        <div class="card-body d-flex flex-column">
+          <h5 class="card-title">${d.name}</h5>
+
+          <p class="card-text small text-muted">
+            ${d.category || ""}
+          </p>
+
+          <p class="card-text">
+            € ${Number(d.price).toFixed(2)}
+          </p>
+
+          <button class="btn btn-primary btn-sm mt-auto"
+                  onclick="addToCart('${d._id}')">
+            Aggiungi al carrello
+          </button>
+        </div>
+      </div>
+    `;
+
+                container.appendChild(col);
+            });
+        }
+
+        // ================= CARRELLO =================
+
+        function getCart() {
+            return JSON.parse(localStorage.getItem("cart")) || null;
+        }
+
+        function saveCart(cart) {
+            localStorage.setItem("cart", JSON.stringify(cart));
+            updateCartBadge();
+        }
+
+        function updateCartBadge() {
+            const badge = document.getElementById("cart-count");
+            const cart = getCart();
+
+            if (!badge) return;
+
+            if (!cart || !cart.items.length) {
+                badge.textContent = 0;
+                return;
+            }
+
+            const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+            badge.textContent = totalItems;
+        }
+
+        function addToCart(dishId) {
+
+            const cart = getCart();
+            const restaurantId = getRestaurantId();
+
+            const dish = window.currentDishes.find(d => d._id === dishId);
+            if (!dish) return;
+
+            // Se carrello esiste e appartiene a ristorante diverso → blocco
+            if (cart && cart.restaurantId !== restaurantId) {
+                if (!confirm("Hai già piatti di un altro ristorante. Vuoi svuotare il carrello?")) {
+                    return;
+                }
+                localStorage.removeItem("cart");
+            }
+
+            const newCart = getCart() || {
+                restaurantId: restaurantId,
+                items: []
+            };
+
+            const existingItem = newCart.items.find(i => i.dishId === dishId);
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                newCart.items.push({
+                    dishId: dish._id,
+                    name: dish.name,
+                    price: dish.price,
+                    quantity: 1
+                });
+            }
+
+            saveCart(newCart);
+        }
+
+        updateCartBadge();
+        // ----------------------------------------------------
+        // Avvio pagina
+        // ----------------------------------------------------
+        loadRestaurant();
+    </script>
+
+    <script src="/js/session.js"></script>
+
+</body>
+
+</html>

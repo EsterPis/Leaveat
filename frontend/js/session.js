@@ -73,7 +73,7 @@ async function validateToken(token) {
 // UI: Navbar quando utente NON è loggato
 // --------------------------------------------------------
 function renderLoggedOutNavbar() {
-    const navbar = document.querySelector(".navbar .ms-auto");
+    const navbar = document.querySelector(".user-section");
     if (!navbar) return;
 
     navbar.innerHTML = `
@@ -87,7 +87,7 @@ function renderLoggedOutNavbar() {
 // UI: Navbar quando utente È loggato
 // --------------------------------------------------------
 function renderLoggedInNavbar(user) {
-    const navbar = document.querySelector(".navbar .ms-auto");
+    const navbar = document.querySelector(".user-section");
     if (!navbar) return;
 
     navbar.innerHTML = `
