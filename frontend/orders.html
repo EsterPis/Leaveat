@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="utf-8">
@@ -74,7 +74,7 @@ async function loadOrders() {
 
   try {
 
-    const response = await fetch("/api/lv/orders", {
+    const response = await fetch("/api/lv/orders/my-orders", {
       headers: {
         "Authorization": "Bearer " + token
       }
