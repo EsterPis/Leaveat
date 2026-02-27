@@ -5,6 +5,8 @@ const mongoose = require('mongoose');
 const Restaurant = require('../models/Restaurant');
 const Restaurateur = require('../models/Restaurateur');
 const Order = require('../models/Order');
+const Dish = require('../models/Dish');
+const Menu = require('../models/Menu');
 const { authMiddleware, requireRole } = require('../middleware/auth');
 
 /* A → UTILITY */
@@ -289,6 +291,68 @@ router.delete('/:id', authMiddleware, requireRole('RESTAURATEUR'), async (req, r
 
         console.error(err);
         res.status(500).json({ success: false, message: 'Errore server' });
+    }
+});
+
+// POST /api/lv/restaurants/:id/clone-menu
+router.post('/:id/clone-menu', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
+    try {
+        const targetRestaurantId = req.params.id;
+        const { sourceRestaurantId } = req.body;
+        const userId = req.user.id;
+
+        // 1️⃣ Verifica ownership target
+        const isOwnerTarget = await checkOwnership(userId, targetRestaurantId);
+        if (!isOwnerTarget) {
+            return res.status(403).json({ success: false, message: 'Non autorizzato' });
+        }
+
+        // 2️⃣ Verifica ownership source
+        const isOwnerSource = await checkOwnership(userId, sourceRestaurantId);
+        if (!isOwnerSource) {
+            return res.status(403).json({ success: false, message: 'Non autorizzato' });
+        }
+
+        const sourceRestaurant = await Restaurant.findById(sourceRestaurantId)
+            .populate({
+                path: 'menuId',
+                populate: { path: 'dishIds' }
+            });
+
+        const targetRestaurant = await Restaurant.findById(targetRestaurantId);
+
+        if (!sourceRestaurant.menuId) {
+            return res.status(400).json({ success: false, message: 'Menu sorgente non trovato' });
+        }
+
+        const dishes = sourceRestaurant.menuId.dishIds;
+
+        // Copia ogni piatto creando nuovi documenti
+        for (const dish of dishes) {
+            const newDish = await Dish.create({
+                name: dish.name,
+                category: dish.category,
+                price: dish.price,
+                ingredients: dish.ingredients,
+                description: dish.description,
+                restaurantId: targetRestaurantId,
+                source: 'restaurant'
+            });
+
+            await Menu.findByIdAndUpdate(
+                targetRestaurant.menuId,
+                { $push: { dishIds: newDish._id } }
+            );
+        }
+
+        // Attiva ristorante
+        await Restaurant.findByIdAndUpdate(targetRestaurantId, { status: 'ACTIVE' });
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Errore clonazione' });
     }
 });
 

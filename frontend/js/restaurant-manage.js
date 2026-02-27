@@ -22,6 +22,90 @@ document.addEventListener('DOMContentLoaded', () => {
     loadOrders();
 });
 
+async function setupCloneInsideModal() {
+    try {
+        const response = await fetch('/api/lv/restaurants/my-restaurants', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const json = await response.json();
+        const others = json.data.filter(r => r._id !== restaurantId);
+
+        const btn = document.getElementById('btn-open-clone-modal');
+
+        if (others.length > 0) {
+            btn.classList.remove('d-none');
+
+            btn.onclick = () => openCloneModal(others);
+        }
+
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function openCloneModal(restaurants) {
+    const modal = new bootstrap.Modal(document.getElementById('cloneMenuModal'));
+    const select = document.getElementById('select-source-res');
+    const previewContainer = document.getElementById('preview-menu-container');
+    const previewList = document.getElementById('preview-list');
+    const confirmBtn = document.getElementById('btn-confirm-clone');
+
+    confirmBtn.disabled = true;
+    previewContainer.style.display = 'none';
+
+    select.innerHTML = '<option value="">Scegli...</option>' +
+        restaurants.map(r =>
+            `<option value="${r._id}">${r.displayName}</option>`
+        ).join('');
+
+    select.onchange = async () => {
+        const sourceId = select.value;
+
+        confirmBtn.disabled = true;
+        previewContainer.style.display = 'none';
+
+        if (!sourceId) return;
+
+        try {
+            const res = await fetch(`/api/lv/restaurants/${sourceId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const json = await res.json();
+            const dishes = json.data.menuId?.dishIds || [];
+
+            previewList.innerHTML = dishes.map(d =>
+                `<li class="list-group-item">
+                    ${d.name} (€${d.price})
+                </li>`
+            ).join('');
+
+            previewContainer.style.display = 'block';
+            confirmBtn.disabled = false;
+
+            confirmBtn.onclick = async () => {
+                await fetch(`/api/lv/restaurants/${restaurantId}/clone-menu`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ sourceRestaurantId: sourceId })
+                });
+
+                modal.hide();
+                loadRestaurantDetails();
+            };
+
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    modal.show();
+}
+
 // FUNZIONE 1: Carica Dettagli e Menù
 async function loadRestaurantDetails() {
     try {
@@ -34,6 +118,7 @@ async function loadRestaurantDetails() {
         if (!json.success) throw new Error(json.message);
 
         const r = json.data; // Oggetto Ristorante
+        await setupCloneInsideModal();
 
         // 1. Popola Header e Info Tab
         document.getElementById('nav-restaurant-name').textContent = r.displayName;
