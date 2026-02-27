@@ -68,13 +68,17 @@ router.get('/my-restaurants', authMiddleware, requireRole('RESTAURATEUR'), async
     }
 });
 
-// GET /api/lv/restaurants/:id
+/// GET /api/lv/restaurants/:id
+// Recupero pubblico di un ristorante (solo se ACTIVE)
 router.get('/:id', async (req, res) => {
     try {
         const restaurantId = req.params.id;
 
-        // Recupero ristorante con popolamento menu e piatti
-        const restaurant = await Restaurant.findById(restaurantId)
+        // Recupero SOLO se ACTIVE
+        const restaurant = await Restaurant.findOne({
+            _id: restaurantId,
+            status: 'ACTIVE'
+        })
             .populate({
                 path: 'menuId',
                 populate: {
@@ -83,7 +87,7 @@ router.get('/:id', async (req, res) => {
             })
             .exec();
 
-        // Se non esiste
+        // Se non esiste o è DRAFT → 404
         if (!restaurant) {
             return res.status(404).json({
                 success: false,
@@ -91,7 +95,6 @@ router.get('/:id', async (req, res) => {
             });
         }
 
-        // Risposta pubblica
         return res.status(200).json({
             success: true,
             data: restaurant
@@ -99,6 +102,7 @@ router.get('/:id', async (req, res) => {
 
     } catch (err) {
         console.error('Errore nel recupero pubblico del ristorante:', err);
+
         return res.status(500).json({
             success: false,
             message: 'Errore interno del server.'
@@ -118,7 +122,7 @@ router.get('/:id/manage', authMiddleware, requireRole('RESTAURATEUR'), async (re
         if (!isOwner) {
             return res.status(403).json({ success: false, message: 'Non sei autorizzato a gestire questo ristorante.' });
         }
-        
+
         // 2. Recupero del Ristorante CON POPOLAMENTO NIDIFICATO
         const restaurant = await Restaurant.findById(restaurantId)
             .populate({
@@ -147,7 +151,7 @@ router.get('/:id/manage', authMiddleware, requireRole('RESTAURATEUR'), async (re
 router.post('/', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
-    
+
     try {
         const userId = req.user.id;
         const rData = req.body;
@@ -174,6 +178,17 @@ router.post('/', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) =
         });
 
         // Validazione automatica di Mongoose scatta qui
+        await newRestaurant.save({ session });
+
+        const newMenu = new (require('../models/Menu'))({
+            restaurantId: newRestaurant._id,
+            dishIds: []
+        });
+
+        await newMenu.save({ session });
+
+        // Collego il menu al ristorante
+        newRestaurant.menuId = newMenu._id;
         await newRestaurant.save({ session });
 
         await session.commitTransaction();
@@ -264,14 +279,14 @@ router.delete('/:id', authMiddleware, requireRole('RESTAURATEUR'), async (req, r
     } catch (err) {
         await session.abortTransaction();
         session.endSession();
-        
+
         if (err.message === 'IMPOSSIBLE_DELETE_ORDERS') {
             return res.status(409).json({ success: false, message: 'Impossibile eliminare: ci sono ordini in corso.' });
         }
         if (err.message === 'Non autorizzato o ristorante non trovato') {
             return res.status(403).json({ success: false, message: err.message });
         }
-        
+
         console.error(err);
         res.status(500).json({ success: false, message: 'Errore server' });
     }

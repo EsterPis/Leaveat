@@ -157,7 +157,7 @@ async function createMenu(restaurantId, dishIds, session) {
   return created[0];
 }
 
-
+// Main function to complete the registration process
 async function completeRegistration(userId, payload) {
   const session = await mongoose.startSession();
   session.startTransaction();

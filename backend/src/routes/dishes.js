@@ -139,6 +139,17 @@ router.post('/', authMiddleware, async (req, res) => {
       { session }
     );
 
+    // Verifico se il menu ora contiene almeno un piatto
+    const updatedMenu = await Menu.findById(restaurant.menuId).session(session);
+
+    if (updatedMenu && updatedMenu.dishIds.length > 0) {
+      await Restaurant.findByIdAndUpdate(
+        restaurantId,
+        { status: 'ACTIVE' },
+        { session }
+      );
+    }
+
     await session.commitTransaction();
     session.endSession();
 
@@ -210,6 +221,17 @@ router.post('/import', authMiddleware, async (req, res) => {
       { $push: { dishIds: newDish._id } },
       { session }
     );
+
+    // Verifico se il menu ora contiene almeno un piatto
+    const updatedMenu = await Menu.findById(restaurant.menuId).session(session);
+
+    if (updatedMenu && updatedMenu.dishIds.length > 0) {
+      await Restaurant.findByIdAndUpdate(
+        restaurantId,
+        { status: 'ACTIVE' },
+        { session }
+      );
+    }
 
     await session.commitTransaction();
     session.endSession();
@@ -307,6 +329,15 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       await Menu.findByIdAndUpdate(
         restaurant.menuId,
         { $pull: { dishIds: dish._id } }
+      );
+    }
+
+    const updatedMenu = await Menu.findById(restaurant.menuId);
+
+    if (!updatedMenu || updatedMenu.dishIds.length === 0) {
+      await Restaurant.findByIdAndUpdate(
+        dish.restaurantId,
+        { status: 'DRAFT' }
       );
     }
 
