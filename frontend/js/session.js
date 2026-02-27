@@ -87,19 +87,52 @@ function renderLoggedOutNavbar() {
 // UI: Navbar quando utente È loggato
 // --------------------------------------------------------
 function renderLoggedInNavbar(user) {
-    const navbar = document.querySelector(".user-section");
-    if (!navbar) return;
 
-    navbar.innerHTML = `
-      <div class="d-flex align-items-center gap-3">
-        <span class="text-white">Ciao, <strong>${user.firstName}</strong></span>
+    const userSection = document.querySelector(".user-section");
+    if (!userSection) return;
+    const cartButton = document.querySelector(".cart-button");
 
-        <a href="./account.html" class="btn btn-outline-light btn-sm" title="Profilo utente">
-          <i class="bi bi-person-circle"></i>
-        </a>
+    let roleButton = "";
 
-        <button id="logout-btn" class="btn btn-danger btn-sm">Logout</button>
-      </div>
+    // Pulsante diverso in base al ruolo
+    if (user.role === "CUSTOMER") {
+        roleButton = `
+            <a href="/orders.html" class="btn btn-outline-light btn-sm">
+                I miei ordini
+            </a>
+        `;
+    }
+
+    if (user.role === "RESTAURATEUR") {
+        roleButton = `
+            <a href="/restaurateur-dashboard.html" class="btn btn-outline-light btn-sm">
+                Dashboard
+            </a>
+        `;
+        if (cartButton) cartButton.style.display = "none"; // Nascondo carrello ai ristoratori
+    }
+
+    userSection.innerHTML = `
+        <div class="d-flex align-items-center gap-2">
+
+            <span class="text-white">
+                Ciao, <strong>${user.firstName}</strong>
+            </span>
+
+            ${roleButton}
+
+            <a href="/account.html"
+               class="btn btn-outline-light btn-sm"
+               title="Profilo utente">
+                <i class="bi bi-person-circle"></i>
+            </a>
+
+            <button id="logout-btn"
+                    class="btn btn-danger btn-sm">
+                Logout
+            </button>
+
+        </div>
     `;
 
     document.getElementById("logout-btn").addEventListener("click", logout);
