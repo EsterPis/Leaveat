@@ -163,7 +163,8 @@ router.get('/restaurant/:restaurantId', authMiddleware, requireRole('RESTAURATEU
 
     const orders = await Order.find({ restaurantId })
       .sort({ createdAt: -1 })
-      .populate('items.dishId', 'name price');
+      .populate('items.dishId', 'name price')
+      .populate('customerId', 'firstName lastName email');
 
     res.json({
       success: true,

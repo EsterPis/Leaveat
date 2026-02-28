@@ -204,37 +204,56 @@ async function loadOrders() {
 
         // Genera Card Ordini
         orders.forEach(order => {
-            // Calcolo colore badge stato
+
             let badgeClass = 'bg-secondary';
             if (order.status === 'ORDINATO') badgeClass = 'bg-warning text-dark';
             if (order.status === 'IN_PREPARAZIONE') badgeClass = 'bg-info text-dark';
             if (order.status === 'CONSEGNATO') badgeClass = 'bg-success';
-
-            // HTML pulsanti azione (mostra solo se ha senso logico)
-            let actionButtons = '';
-            if (order.status === 'ORDINATO') {
-                actionButtons = `<button class="btn btn-sm btn-primary" onclick="updateStatus('${order._id}', 'IN_PREPARAZIONE')">Inizia Preparazione</button>`;
-            } else if (order.status === 'IN_PREPARAZIONE') {
-                actionButtons = `<button class="btn btn-sm btn-success" onclick="updateStatus('${order._id}', 'CONSEGNATO')">Segna come Consegnato</button>`;
-            }
+            if (order.status === 'ANNULLATO') badgeClass = 'bg-danger';
 
             const card = document.createElement('div');
-            card.className = 'card mb-3 border-start border-4 border-primary';
+            card.className = 'card mb-3 shadow-sm';
+
             card.innerHTML = `
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-1">Ordine #${order._id.slice(-6)}</h5> <p class="mb-1 text-muted">Totale: € ${order.totalPrice}</p>
-                        <span class="badge ${badgeClass}">${order.status}</span>
-                        <small class="text-muted ms-2">${new Date(order.createdAt).toLocaleString()}</small>
-                    </div>
-                    <div>
-                        ${actionButtons}
-                    </div>
-                </div>
-            `;
+        <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+                <h5>Ordine #${order._id.slice(-6)}</h5>
+                <p class="mb-1">Totale: € ${order.totalPrice.toFixed(2)}</p>
+                <span class="badge ${badgeClass}">${order.status}</span>
+                <small class="text-muted ms-2">
+                    ${new Date(order.createdAt).toLocaleString()}
+                </small>
+            </div>
+            <div class="text-end">
+                <button class="btn btn-outline-secondary btn-sm mb-2 btn-details">
+                    Dettagli
+                </button>
+                <br>
+                <button class="btn btn-sm btn-primary btn-update">
+                    Aggiorna Stato
+                </button>
+            </div>
+        </div>
+    `;
+
+            // EVENT LISTENERS CORRETTI
+            const detailsBtn = card.querySelector('.btn-details');
+            detailsBtn.addEventListener('click', () => {
+                showOrderDetails(order);
+            });
+
+            const updateBtn = card.querySelector('.btn-update');
+            updateBtn.addEventListener('click', () => {
+
+                if (order.status === 'ORDINATO') {
+                    updateStatus(order._id, 'IN_PREPARAZIONE');
+                } else if (order.status === 'IN_PREPARAZIONE') {
+                    updateStatus(order._id, 'CONSEGNATO');
+                }
+            });
+
             container.appendChild(card);
         });
-
     } catch (err) {
         console.error(err);
         container.innerHTML = `<div class="alert alert-danger">Errore caricamento ordini.</div>`;
@@ -505,4 +524,52 @@ async function loadCatalogList(nameQuery = '') {
     } catch (err) {
         resultsContainer.innerHTML = '<p class="text-danger text-center p-3">Errore nel caricamento.</p>';
     }
+}
+
+function showOrderDetails(order) {
+
+    const modal = new bootstrap.Modal(
+        document.getElementById('orderDetailsModal')
+    );
+
+    let itemsHtml = '';
+
+    order.items.forEach(item => {
+        itemsHtml += `
+            <tr>
+                <td>${item.dishId.name}</td>
+                <td>${item.quantity}</td>
+                <td>€ ${(item.dishId.price * item.quantity).toFixed(2)}</td>
+            </tr>
+        `;
+    });
+
+    const html = `
+        <p><strong>Cliente:</strong> ${order.customerId?.firstName || ''} ${order.customerId?.lastName || ''}</p>
+        <p><strong>Stato:</strong> ${order.status}</p>
+        <p><strong>Data:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
+
+        <hr>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Piatto</th>
+                    <th>Quantità</th>
+                    <th>Subtotale</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${itemsHtml}
+            </tbody>
+        </table>
+
+        <h5 class="text-end">
+            Totale: € ${order.totalPrice.toFixed(2)}
+        </h5>
+    `;
+
+    document.getElementById('order-details-body').innerHTML = html;
+
+    modal.show();
 }
