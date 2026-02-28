@@ -16,6 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    const refreshBtn = document.getElementById('btn-refresh-orders');
+
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            loadOrders();
+        });
+    }
+
     // Carica i dati iniziali
     loadRestaurantDetails();
     // Carica gli ordini
