@@ -1,17 +1,23 @@
-// ========================================================
-//  SESSIONE UTENTE - GESTIONE FRONTEND
-// ========================================================
+/**
+ * Session management script for Leaveat frontend.
+ * 
+ * Responsibilities:    
+ * * - Check for JWT token on page load
+ * * - Validate token with backend (/users/me)
+ * * - Store user info in localStorage (except token)
+ * * - Render navbar based on authentication state and role
+ * * - Provide logout functionality
+ */
+
 
 // Entry point
 document.addEventListener("DOMContentLoaded", initSession);
 
-
-// --------------------------------------------------------
-// Inizializzazione della sessione
-// --------------------------------------------------------
+/* A → SESSION */
+// Session initialization: check token, validate, render UI
 async function initSession() {
-    const token = getToken();
 
+    const token = getToken();
     if (!token) {
         renderLoggedOutNavbar();
         return;
@@ -19,38 +25,38 @@ async function initSession() {
 
     // Verifica token con /users/me
     const user = await validateToken(token);
-
     if (!user) {
         logout();
         return;
     }
 
-    // Salvo i dati minimi nel localStorage (se non già presenti)
     saveUserToStorage(user);
 
-    // Aggiorno UI
+    // Render UI
     renderLoggedInNavbar(user);
     updateWelcomeTitle(user);
 }
 
+// Session closure: clear storage and redirect to home
+function logout() {
+    localStorage.clear();
+    window.location.href = "/index.html";
+}
 
-// --------------------------------------------------------
-// Funzioni: Token / Storage
-// --------------------------------------------------------
+/* B → UTILITY FUNCTIONS */
+// Exctract token from localStorage
 function getToken() {
     return localStorage.getItem("token");
 }
 
+// Saves user info in localStorage (except token) for easy access across pages
 function saveUserToStorage(user) {
     localStorage.setItem("firstName", user.firstName);
     localStorage.setItem("role", user.role);
     localStorage.setItem("email", user.email);
 }
 
-
-// --------------------------------------------------------
-// Verifica token presso il backend
-// --------------------------------------------------------
+// Validates token by calling /users/me. Returns user data if valid, null otherwise.
 async function validateToken(token) {
     try {
         const response = await fetch("http://localhost:3005/api/lv/users/me", {
@@ -68,10 +74,8 @@ async function validateToken(token) {
     }
 }
 
-
-// --------------------------------------------------------
-// UI: Navbar quando utente NON è loggato
-// --------------------------------------------------------
+/* C → UI RENDERING */
+// Render the navbar for logged-out users
 function renderLoggedOutNavbar() {
     const navbar = document.querySelector(".user-section");
     if (!navbar) return;
@@ -88,10 +92,7 @@ function renderLoggedOutNavbar() {
         <a class="btn btn-warning btn-sm" href="/register.html">Registrati</a>`;
 }
 
-
-// --------------------------------------------------------
-// UI: Navbar quando utente È loggato
-// --------------------------------------------------------
+// Render the navbar for logged-in users
 function renderLoggedInNavbar(user) {
 
     const userSection = document.querySelector(".user-section");
@@ -144,10 +145,7 @@ function renderLoggedInNavbar(user) {
     document.getElementById("logout-btn").addEventListener("click", logout);
 }
 
-
-// --------------------------------------------------------
-// UI: Messaggio di benvenuto nella home
-// --------------------------------------------------------
+// Update the welcome title on the homepage with the user's name
 function updateWelcomeTitle(user) {
     const headerTitle = document.querySelector("h1.display-6");
     if (!headerTitle) return;
@@ -156,10 +154,5 @@ function updateWelcomeTitle(user) {
 }
 
 
-// --------------------------------------------------------
-// LOGOUT
-// --------------------------------------------------------
-function logout() {
-    localStorage.clear();
-    window.location.href = "/index.html";
-}
+
+
