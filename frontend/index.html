@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="it">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,75 +13,86 @@
 
 <body>
 
-<!-- ================= NAVBAR ================= -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="/index.html">Leaveat</a>
-    <div class="ms-auto"></div>
-  </div>
-</nav>
+  <!-- ================= NAVBAR ================= -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
 
-<!-- ================= HEADER ================= -->
-<header class="bg-light py-5">
-  <div class="container">
-    <h1 class="display-6">Benvenuto su Leaveat</h1>
-    <p class="lead">Scopri i ristoranti disponibili</p>
+      <a class="navbar-brand" href="/index.html">Leaveat</a>
 
-    <!-- Ricerca ristorante -->
-    <form id="searchForm" class="row g-2">
-      <div class="col-sm-8">
-        <input 
-          class="form-control" 
-          name="name" 
-          placeholder="Cerca per nome ristorante">
+      <div class="d-flex align-items-center gap-3">
+
+        <!-- Carrello -->
+        <a href="/cart.html" class="btn btn-outline-light position-relative cart-button">
+          <i class="bi bi-cart3"></i>
+          <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            0
+          </span>
+        </a>
+        <div class="ms-2 user-section"></div>
+
       </div>
-      <div class="col-sm-4">
-        <button class="btn btn-primary w-100">Cerca</button>
-      </div>
-    </form>
-  </div>
-</header>
 
-<!-- ================= RISULTATI ================= -->
-<main class="container py-4">
-  <div id="results" class="row g-3"></div>
-</main>
+    </div>
+  </nav>
 
-<!-- ================= SCRIPT ================= -->
-<script>
-const form = document.getElementById('searchForm');
-const results = document.getElementById('results');
+  <!-- ================= HEADER ================= -->
+  <header class="bg-light py-5">
+    <div class="container">
+      <h1 class="display-6">Benvenuto su Leaveat</h1>
+      <p class="lead">Scopri i ristoranti disponibili</p>
 
-// ----------------------------------------------------
-// Carica ristoranti dal backend
-// ----------------------------------------------------
-async function fetchRestaurants(params = {}) {
-  try {
-    const queryString = new URLSearchParams(params).toString();
-    const response = await fetch('/api/lv/restaurants?' + queryString);
-    const data = await response.json();
+      <!-- Ricerca ristorante -->
+      <form id="searchForm" class="row g-2">
+        <div class="col-sm-8">
+          <input class="form-control" name="name" placeholder="Cerca per nome ristorante">
+        </div>
+        <div class="col-sm-4">
+          <button class="btn btn-primary w-100">Cerca</button>
+        </div>
+      </form>
+    </div>
+  </header>
 
-    results.innerHTML = '';
+  <!-- ================= RISULTATI ================= -->
+  <main class="container py-4">
+    <div id="results" class="row g-3"></div>
+  </main>
 
-    (data.data || []).forEach(r => {
+  <!-- ================= SCRIPT ================= -->
+  <script>
+    const form = document.getElementById('searchForm');
+    const results = document.getElementById('results');
 
-      // Nome corretto dal tuo schema
-      const name = r.displayName || r.legalName || "Ristorante";
+    // ----------------------------------------------------
+    // Carica ristoranti dal backend
+    // ----------------------------------------------------
+    async function fetchRestaurants(params = {}) {
+      try {
+        const queryString = new URLSearchParams(params).toString();
+        const response = await fetch('/api/lv/restaurants?' + queryString);
+        const data = await response.json();
 
-      // Indirizzo strutturato
-      const address = r.address
-        ? `${r.address.street} ${r.address.number}, ${r.address.city} (${r.address.province})`
-        : "Indirizzo non disponibile";
+        results.innerHTML = '';
 
-      // Fallback immagine
-      const imageSrc = (r.imageUrl && r.imageUrl.trim() !== "")
-        ? r.imageUrl
-        : "/assets/logo-default.jpg";
+        (data.data || []).forEach(r => {
 
-      const col = document.createElement('div');
-      col.className = 'col-12 col-md-6 col-lg-4';
+          // Nome corretto dal tuo schema
+          const name = r.displayName || r.legalName || "Ristorante";
 
-      col.innerHTML = `
+          // Indirizzo strutturato
+          const address = r.address
+            ? `${r.address.street} ${r.address.number}, ${r.address.city} (${r.address.province})`
+            : "Indirizzo non disponibile";
+
+          // Fallback immagine
+          const imageSrc = (r.imageUrl && r.imageUrl.trim() !== "")
+            ? r.imageUrl
+            : "/assets/logo-default.jpg";
+
+          const col = document.createElement('div');
+          col.className = 'col-12 col-md-6 col-lg-4';
+
+          col.innerHTML = `
         <div class="card h-100 shadow-sm">
 
           <img src="${imageSrc}"
@@ -105,31 +117,32 @@ async function fetchRestaurants(params = {}) {
         </div>
       `;
 
-      results.appendChild(col);
+          results.appendChild(col);
+        });
+
+      } catch (error) {
+        console.error("Errore nel caricamento dei ristoranti:", error);
+      }
+    }
+
+    // ----------------------------------------------------
+    // Evento ricerca
+    // ----------------------------------------------------
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const formData = Object.fromEntries(new FormData(form).entries());
+      fetchRestaurants(formData);
     });
 
-  } catch (error) {
-    console.error("Errore nel caricamento dei ristoranti:", error);
-  }
-}
+    // ----------------------------------------------------
+    // Caricamento iniziale
+    // ----------------------------------------------------
+    fetchRestaurants({});
+  </script>
 
-// ----------------------------------------------------
-// Evento ricerca
-// ----------------------------------------------------
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const formData = Object.fromEntries(new FormData(form).entries());
-  fetchRestaurants(formData);
-});
-
-// ----------------------------------------------------
-// Caricamento iniziale
-// ----------------------------------------------------
-fetchRestaurants({});
-</script>
-
-<!-- Gestione sessione -->
-<script src="/js/session.js"></script>
+  <!-- Gestione sessione -->
+  <script src="/js/session.js"></script>
 
 </body>
+
 </html>
