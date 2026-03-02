@@ -76,10 +76,16 @@ function renderLoggedOutNavbar() {
     const navbar = document.querySelector(".user-section");
     if (!navbar) return;
 
-    navbar.innerHTML = `
+    const currentPage = window.location.pathname;
+
+    if (currentPage.includes("login.html"))
+        navbar.innerHTML = `<a class="btn btn-warning btn-sm" href="/register.html">Registrati</a>`;
+    else if (currentPage.includes("register.html"))
+        navbar.innerHTML = `<a class="btn btn-outline-light btn-sm" href="/login.html">Login</a>`;
+    else 
+        navbar.innerHTML = `
         <a class="btn btn-outline-light btn-sm" href="/login.html">Login</a>
-        <a class="btn btn-warning btn-sm" href="/register.html">Registrati</a>
-    `;
+        <a class="btn btn-warning btn-sm" href="/register.html">Registrati</a>`;
 }
 
 
