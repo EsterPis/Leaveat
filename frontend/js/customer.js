@@ -1,7 +1,7 @@
 const form = document.getElementById('customerForm');
 
 if (form) {
-  const API_BASE = '/api/lv/customers';
+  const API_BASE = '/api/lv/customers/me';
   async function loadCategories() {
     try {
       const res = await fetch('/api/lv/categories');
@@ -130,7 +130,6 @@ if (form) {
     const paymentMethod = formData.get('paymentMethod');
 
     const body = {
-      userId,
       preferences: {
         favoriteCategories,
         favoriteRestaurantIds: selectedRestaurants.map(r => r._id),
@@ -140,7 +139,7 @@ if (form) {
 
     try {
       const res = await fetch(API_BASE, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
