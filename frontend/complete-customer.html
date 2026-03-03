@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="it">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,10 +11,10 @@
 
 <body class="bg-light">
   <nav class="navbar bg-light px-3">
-  <a href="index.html" class="navbar-brand d-flex align-items-center">
+    <a href="index.html" class="navbar-brand d-flex align-items-center">
       <i class="bi bi-house-fill fs-3"></i>
-  </a>
-</nav>
+    </a>
+  </nav>
 
   <div class="container py-5">
     <div class="row justify-content-center">
@@ -26,21 +27,17 @@
               <!-- Categorie preferite -->
               <div class="mb-3">
                 <label class="form-label">Categorie preferite</label>
-                <div id="categoriesList" class="ms-2">
-                  <!-- Le checkbox saranno inserite via JS -->
-                </div>
+                <div id="categoriesList" class="d-flex flex-wrap gap-2"></div>
+                <div id="selectedCategories" class="mt-2"></div>
               </div>
 
               <!-- Ristoranti preferiti -->
               <div class="mb-3">
                 <label class="form-label">Ristoranti preferiti</label>
-                <input type="text" id="restaurantSearch" class="form-control mb-2" placeholder="Cerca ristorante…">
-                <div id="restaurantSuggestions" class="list-group shadow-sm" style="display: none;"></div>
-                <small class="text-muted d-block mb-2">Seleziona uno o più ristoranti dal suggerimento.</small>
-                <div id="selectedRestaurants" class="mt-2">
-                  <!-- I ristoranti selezionati compariranno qui -->
-                </div>
+                <div id="restaurantsList" class="d-flex flex-wrap gap-2"></div>
+                <div id="selectedRestaurants" class="mt-2"></div>
               </div>
+
 
               <!-- Metodo di pagamento -->
               <div class="mb-3">
@@ -73,4 +70,5 @@
 
   <script src="/js/customer.js"></script>
 </body>
+
 </html>
