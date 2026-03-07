@@ -1,216 +1,434 @@
 const API_URL = '/api/lv';
 
-document.addEventListener('DOMContentLoaded', async () => {
+let currentUser = null;
+let currentProfile = null;
+let currentCustomerPreferences = {};
+
+document.addEventListener('DOMContentLoaded', initPage);
+
+/* =========================
+   PAGE INIT
+========================= */
+
+async function initPage() {
+
     const token = localStorage.getItem('token');
+
     if (!token) {
-        window.location.href = 'login.html';
+        window.location.href = "login.html";
         return;
     }
 
     try {
-        await loadUserProfile(token);
-    } catch (error) {
-        console.error('Errore caricamento profilo:', error);
-        showAlert('Impossibile caricare i dati del profilo.', 'danger');
+
+        const data = await fetchUserProfile(token);
+
+        currentUser = data.user;
+        currentProfile = data.profile || {};
+
+        renderUserData(currentUser);
+        populateEditForm(currentUser);
+        renderRoleSection(currentUser, currentProfile);
+
+        if (currentUser.role === "CUSTOMER") {
+            currentCustomerPreferences = currentProfile.preferences || {};
+            loadCategories();
+            loadRestaurants();
+        }
+
+    } catch (err) {
+
+        console.error(err);
+        showAlert("Impossibile caricare il profilo", "danger");
+
     }
-});
-
-// Funzione per mostrare messaggi (successo/errore)
-function showAlert(message, type) {
-    const alertBox = document.getElementById('alertMessage');
-    alertBox.className = `alert alert-${type}`;
-    alertBox.textContent = message;
-    alertBox.classList.remove('d-none');
-
-    // Nascondi dopo 3 secondi
-    setTimeout(() => {
-        alertBox.classList.add('d-none');
-    }, 5000);
 }
 
-async function loadUserProfile(token) {
+
+/* =========================
+   API CALLS
+========================= */
+
+async function fetchUserProfile(token) {
 
     const response = await fetch(`${API_URL}/users/me`, {
-        method: 'GET',
         headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            "Authorization": `Bearer ${token}`
         }
     });
 
-    if (!response.ok) throw new Error('Errore fetch dati');
+    if (!response.ok)
+        throw new Error("Errore caricamento profilo");
 
-    const data = await response.json();
+    const result = await response.json();
 
-    // Popola i dati base (User.js)
-    const user = data.user || data; // Adatta in base a come risponde il tuo backend
-    const profile = data.profile || {}; // Dati specifici (Customer o Restaurateur)
+    console.log("API RESPONSE:", result);
 
-    document.getElementById('lblFirstName').textContent = user.firstName;
-    document.getElementById('lblLastName').textContent = user.lastName;
-    document.getElementById('lblEmail').textContent = user.email;
-    document.getElementById('lblPhone').textContent = user.phoneNumber;
-
-    // Pre-popola anche i campi del modale di modifica
-    document.getElementById('editFirstName').value = user.firstName;
-    document.getElementById('editLastName').value = user.lastName;
-    document.getElementById('editPhone').value = user.phoneNumber;
-    document.getElementById('editEmail').value = user.email;
-
-    // GESTIONE RUOLI
-    // Se è un CLIENTE
-    if (user.role === 'CUSTOMER') {
-        const section = document.getElementById('customer-section');
-        section.classList.remove('d-none'); // Mostra sezione cliente
-
-        // Popola preferenze (Customer.js)
-        if (profile.paymentMethod) {
-            document.getElementById('lblPayment').textContent = profile.paymentMethod;
-        }
-
-        const prefList = document.getElementById('listPreferences');
-        prefList.innerHTML = ''; // Pulisci
-
-        // Se ci sono categorie preferite
-        if (profile.preferences && profile.preferences.favoriteCategories) {
-            profile.preferences.favoriteCategories.forEach(cat => {
-                const li = document.createElement('li');
-                li.textContent = cat;
-                prefList.appendChild(li);
-            });
-        } else {
-            prefList.innerHTML = '<li>Nessuna preferenza specificata</li>';
-        }
+    // CASO 1 → struttura { success, data }
+    if (result.data) {
+        return {
+            user: result.data.user || result.data,
+            profile: result.data.profile || null
+        };
     }
-    // Se è un RISTORATORE
-    else if (user.role === 'RESTAURATEUR') {
-        const section = document.getElementById('restaurateur-section');
-        section.classList.remove('d-none'); // Mostra sezione ristoratore
 
-        // Popola dati fiscali (Restaurateur.js)
-        document.getElementById('lblVat').textContent = profile.VATNumber || 'N/D';
-        document.getElementById('lblIban').textContent = profile.IBAN || 'N/D';
-
-        // Modifica testo avviso eliminazione come da richiesta
-        const warningText = document.getElementById('deleteWarningText');
-        warningText.innerHTML = `
-            <strong>ATTENZIONE:</strong> Sei un ristoratore.<br>
-            Eliminando il tuo account, verranno eliminati anche 
-            <strong>TUTTI i ristoranti</strong> e i menù associati.<br>
-            Sei sicuro di voler procedere?
-        `;
+    // CASO 2 → struttura { user, profile }
+    if (result.user) {
+        return {
+            user: result.user,
+            profile: result.profile || null
+        };
     }
+
+    // CASO 3 → solo user
+    return {
+        user: result,
+        profile: null
+    };
 }
+
+
+/* =========================
+   UI RENDER
+========================= */
+
+function renderUserData(user) {
+
+    document.getElementById("lblFirstName").textContent = user.firstName;
+    document.getElementById("lblLastName").textContent = user.lastName;
+    document.getElementById("lblEmail").textContent = user.email;
+    document.getElementById("lblPhone").textContent = user.phoneNumber;
+
+}
+
+
+function populateEditForm(user) {
+
+    document.getElementById("editFirstName").value = user.firstName;
+    document.getElementById("editLastName").value = user.lastName;
+    document.getElementById("editPhone").value = user.phoneNumber;
+    document.getElementById("editEmail").value = user.email;
+
+}
+
+
+/* =========================
+   ROLE MANAGEMENT
+========================= */
+
+function renderRoleSection(user, profile) {
+
+    if (user.role === "CUSTOMER")
+        renderCustomerSection(profile);
+
+    if (user.role === "RESTAURATEUR")
+        renderRestaurateurSection(profile);
+
+}
+
+
+/* =========================
+   CUSTOMER SECTION
+========================= */
+
+function renderCustomerSection(profile) {
+
+    const section = document.getElementById("customer-section");
+    section.classList.remove("d-none");
+
+    renderPaymentMethod(profile);
+    renderFavoriteCategories(profile);
+    renderFavoriteRestaurants(profile);
+
+}
+
+
+function renderPaymentMethod(profile) {
+
+    const payment = profile.paymentMethod || "Non specificato";
+    document.getElementById("lblPayment").textContent = payment;
+
+}
+
+
+function renderFavoriteCategories(profile) {
+
+    const list = document.getElementById("listPreferences");
+    list.innerHTML = "";
+
+    const categories = profile.preferences?.favoriteCategories || [];
+
+    if (categories.length === 0) {
+        list.innerHTML = "<li>Nessuna preferenza specificata</li>";
+        return;
+    }
+
+    categories.forEach(cat => {
+
+        const li = document.createElement("li");
+        li.textContent = cat;
+        list.appendChild(li);
+
+    });
+
+}
+
+
+function renderFavoriteRestaurants(profile) {
+
+    const list = document.getElementById("listRestaurants");
+    list.innerHTML = "";
+
+    const restaurants = profile.preferences?.favoriteRestaurantIds || [];
+
+    if (restaurants.length === 0) {
+        list.innerHTML = "<li>Nessun ristorante preferito</li>";
+        return;
+    }
+
+    restaurants.forEach(r => {
+
+        const li = document.createElement("li");
+
+        if (typeof r === "object")
+            li.textContent = r.displayName;
+        else
+            li.textContent = r;
+
+        list.appendChild(li);
+
+    });
+
+}
+
+
+/* =========================
+   RESTAURATEUR SECTION
+========================= */
+
+function renderRestaurateurSection(profile) {
+
+    const section = document.getElementById("restaurateur-section");
+    section.classList.remove("d-none");
+
+    document.getElementById("lblVat").textContent = profile.VATNumber || "N/D";
+    document.getElementById("lblIban").textContent = profile.IBAN || "N/D";
+
+    const warningText = document.getElementById("deleteWarningText");
+
+    warningText.innerHTML = `
+        <strong>ATTENZIONE:</strong> Sei un ristoratore.<br>
+        Eliminando il tuo account verranno eliminati anche 
+        <strong>TUTTI i ristoranti</strong> e i menù associati.
+    `;
+
+}
+
+
+/* =========================
+   UPDATE USER
+========================= */
 
 async function updateUser() {
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
 
     const updatedData = {
-        firstName: document.getElementById('editFirstName').value,
-        lastName: document.getElementById('editLastName').value,
-        phoneNumber: document.getElementById('editPhone').value
+        firstName: document.getElementById("editFirstName").value,
+        lastName: document.getElementById("editLastName").value,
+        phoneNumber: document.getElementById("editPhone").value
     };
 
-    const newEmail = document.getElementById('editEmail').value;
+    const newEmail = document.getElementById("editEmail").value;
 
     try {
-        // Update user data (escluso email)
-        const response = await fetch(`${API_URL}/users/me`, {
-            method: 'PUT',
+
+        const res = await fetch(`${API_URL}/users/me`, {
+            method: "PUT",
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
             },
             body: JSON.stringify(updatedData)
         });
 
-        if (!response.ok) {
-            const err = await response.json();
-            showAlert(err.message || 'Errore aggiornamento dati', 'danger');
+        if (!res.ok) {
+            const err = await res.json();
+            showAlert(err.message, "danger");
             return;
         }
 
-        // Update email
-        const emailResponse = await fetch(`${API_URL}/users/me/email`, {
-            method: 'PUT',
+        const emailRes = await fetch(`${API_URL}/users/me/email`, {
+            method: "PUT",
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
             },
             body: JSON.stringify({ email: newEmail })
         });
 
-        if (!emailResponse.ok) {
-            const err = await emailResponse.json();
-            showAlert(err.message || 'Errore aggiornamento email', 'danger');
+        if (!emailRes.ok) {
+            const err = await emailRes.json();
+            showAlert(err.message, "danger");
             return;
-        } else localStorage.setItem('email', newEmail);
+        }
 
-        // Close modal
-        const modalEl = document.getElementById('editModal');
-        const modalInstance = bootstrap.Modal.getInstance(modalEl);
-        modalInstance.hide();
+        localStorage.setItem("email", newEmail);
 
-        // Update UI
-        showAlert('Dati aggiornati con successo!', 'success');
-        loadUserProfile(token);
+        bootstrap.Modal.getInstance(
+            document.getElementById("editModal")
+        ).hide();
 
-    } catch (error) {
-        console.error(error);
-        showAlert('Errore di connessione', 'danger');
+        showAlert("Dati aggiornati!", "success");
+
+        initPage();
+
+    } catch (err) {
+
+        console.error(err);
+        showAlert("Errore aggiornamento", "danger");
+
     }
+
 }
 
-async function updatePassword() {
 
-    const token = localStorage.getItem('token');
+/* =========================
+   PASSWORD UPDATE
+========================= */
+
+async function updatePassword() {
+    const token = localStorage.getItem("token");
 
     const body = {
-        currentPassword: document.getElementById('currentPassword').value,
-        newPassword: document.getElementById('newPassword').value
+        currentPassword: document.getElementById("currentPassword").value,
+        newPassword: document.getElementById("newPassword").value
     };
 
     const res = await fetch(`${API_URL}/users/me/password`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
         },
         body: JSON.stringify(body)
     });
 
     if (res.ok) {
         showAlert("Password aggiornata", "success");
-    } else {
+
+    }
+    else {
         const err = await res.json();
         showAlert(err.message, "danger");
     }
+
+    bootstrap.Modal.getInstance(
+        document.getElementById("passwordModal")
+    ).hide();
+
 }
 
-async function deleteAccount() {
-    const token = localStorage.getItem('token');
+
+/* =========================
+   PREFERENCES UPDATE
+========================= */
+
+async function updatePreferences() {
+
+    const token = localStorage.getItem("token");
+
+    const body = {
+        preferences: {
+            favoriteCategories: selectedCategories,
+            favoriteRestaurantIds: selectedRestaurants.map(r => r._id)
+        }
+    };
 
     try {
-        const response = await fetch(`${API_URL}/users/me`, {
-            method: 'DELETE',
+
+        const res = await fetch(`${API_URL}/customers/me`, {
+            method: "PUT",
             headers: {
-                'Authorization': `Bearer ${token}`
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(body)
+        });
+
+        const out = await res.json();
+
+        if (!out.success)
+            throw new Error(out.message);
+
+        showAlert("Preferenze aggiornate", "success");
+
+        bootstrap.Modal.getInstance(
+            document.getElementById("preferencesModal")
+        ).hide();
+
+        initPage();
+
+    } catch (err) {
+
+        showAlert(err.message, "danger");
+
+    }
+
+}
+
+
+/* =========================
+   DELETE ACCOUNT
+========================= */
+
+async function deleteAccount() {
+
+    const token = localStorage.getItem("token");
+
+    try {
+
+        const res = await fetch(`${API_URL}/users/me`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
             }
         });
 
-        if (response.ok) {
-            // Logout forzato
-            localStorage.removeItem('token');
-            localStorage.removeItem('userRole');
-            alert('Account eliminato correttamente. Verrai reindirizzato alla home.');
-            window.location.href = 'index.html';
-        } else {
-            const err = await response.json();
-            alert('Errore eliminazione: ' + (err.message || 'Sconosciuto'));
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message);
         }
-    } catch (error) {
-        console.error(error);
-        alert('Errore di connessione durante eliminazione');
+
+        localStorage.clear();
+
+        alert("Account eliminato");
+
+        window.location.href = "index.html";
+
+    } catch (err) {
+
+        alert("Errore eliminazione: " + err.message);
+
     }
+
+}
+
+
+/* =========================
+   ALERT
+========================= */
+
+function showAlert(message, type) {
+
+    const alertBox = document.getElementById("alertMessage");
+
+    alertBox.className = `alert alert-${type}`;
+    alertBox.textContent = message;
+    alertBox.classList.remove("d-none");
+
+    setTimeout(() => {
+        alertBox.classList.add("d-none");
+    }, 5000);
+
 }
