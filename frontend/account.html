@@ -13,11 +13,8 @@
     <!-- ================= NAVBAR ================= -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-
             <a class="navbar-brand" href="/index.html">Leaveat</a>
-
             <div class="d-flex align-items-center gap-3">
-
                 <!-- Carrello -->
                 <a href="/cart.html" class="btn btn-outline-light position-relative cart-button">
                     <i class="bi bi-cart3"></i>
@@ -27,18 +24,15 @@
                     </span>
                 </a>
                 <div class="ms-2 user-section"></div>
-
             </div>
-
         </div>
     </nav>
 
     <div class="container">
         <h2 class="mb-4">Il mio Profilo</h2>
-
         <div id="alertMessage" class="alert d-none" role="alert"></div>
-
         <div class="row">
+            <!--============= PERSONAL DATA =============-->
             <div class="col-md-6 mb-3">
                 <div class="card h-100 shadow-sm">
                     <div class="card-header bg-primary text-white">
@@ -49,16 +43,19 @@
                         <p><strong>Cognome:</strong> <span id="lblLastName">...</span></p>
                         <p><strong>Email:</strong> <span id="lblEmail">...</span></p>
                         <p><strong>Telefono:</strong> <span id="lblPhone">...</span></p>
-
                         <button class="btn btn-outline-primary mt-3" data-bs-toggle="modal" data-bs-target="#editModal">
                             <i class="bi bi-pencil"></i> Modifica Dati
+                        </button>
+                        <button class="btn btn-outline-secondary mt-3" data-bs-toggle="modal"
+                            data-bs-target="#passwordModal">
+                            <i class="bi bi-key"></i> Cambia Password
                         </button>
                     </div>
                 </div>
             </div>
-
+            <!--============= PREFERENCES =============-->
             <div class="col-md-6 mb-3">
-
+                <!--Customer Section-->
                 <div id="customer-section" class="card h-100 shadow-sm d-none">
                     <div class="card-header bg-success text-white">
                         <i class="bi bi-basket"></i> Preferenze Cliente
@@ -70,7 +67,7 @@
                         </ul>
                     </div>
                 </div>
-
+                <!--Restaurateur Section-->
                 <div id="restaurateur-section" class="card h-100 shadow-sm d-none">
                     <div class="card-header bg-warning text-dark">
                         <i class="bi bi-shop"></i> Area Ristoratore
@@ -86,13 +83,12 @@
                         </a>
                     </div>
                 </div>
-
             </div>
         </div>
 
         <div class="card border-danger mt-4">
             <div class="card-body">
-                <h5 class="card-title text-danger">Zona Pericolo</h5>
+                <h5 class="card-title text-danger">ELIMINA ACCOUNT</h5>
                 <p class="card-text">L'eliminazione dell'account è irreversibile.</p>
                 <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
                     <i class="bi bi-trash"></i> Elimina Account
@@ -100,12 +96,12 @@
             </div>
         </div>
     </div>
-
+    <!-- ========== MODALS =========-->
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Modifica Dati</h5>
+                    <h5 class="modal-title">Modifica Account</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -122,6 +118,10 @@
                             <label for="editPhone" class="form-label">Telefono</label>
                             <input type="tel" class="form-control" id="editPhone" required>
                         </div>
+                        <div class="mb-3">
+                            <label for="editEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="editEmail" required>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -131,7 +131,39 @@
             </div>
         </div>
     </div>
+    <!--Password modal-->
+    <div class="modal fade" id="passwordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
 
+                <div class="modal-header">
+                    <h5 class="modal-title">Cambia Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label">Password attuale</label>
+                        <input type="password" id="currentPassword" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Nuova password</label>
+                        <input type="password" id="newPassword" class="form-control" required>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button class="btn btn-primary" onclick="updatePassword()">Aggiorna Password</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!--Delete modal-->
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">

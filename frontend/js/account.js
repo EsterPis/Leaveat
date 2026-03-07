@@ -21,20 +21,15 @@ function showAlert(message, type) {
     alertBox.className = `alert alert-${type}`;
     alertBox.textContent = message;
     alertBox.classList.remove('d-none');
-    
+
     // Nascondi dopo 3 secondi
     setTimeout(() => {
         alertBox.classList.add('d-none');
     }, 5000);
 }
 
-// 1. CARICAMENTO DATI
 async function loadUserProfile(token) {
-    // Nota: Assumo che il backend /users/me restituisca un oggetto strutturato così:
-    // { user: { ...datiUser }, profile: { ...datiSpecifici } }
-    // Se il tuo backend attuale restituisce solo i dati User, dovrai fare una seconda chiamata
-    // in base al ruolo. Qui ipotizzo una chiamata singola o aggregata per semplicità.
-    
+
     const response = await fetch(`${API_URL}/users/me`, {
         method: 'GET',
         headers: {
@@ -46,7 +41,7 @@ async function loadUserProfile(token) {
     if (!response.ok) throw new Error('Errore fetch dati');
 
     const data = await response.json();
-    
+
     // Popola i dati base (User.js)
     const user = data.user || data; // Adatta in base a come risponde il tuo backend
     const profile = data.profile || {}; // Dati specifici (Customer o Restaurateur)
@@ -60,6 +55,7 @@ async function loadUserProfile(token) {
     document.getElementById('editFirstName').value = user.firstName;
     document.getElementById('editLastName').value = user.lastName;
     document.getElementById('editPhone').value = user.phoneNumber;
+    document.getElementById('editEmail').value = user.email;
 
     // GESTIONE RUOLI
     // Se è un CLIENTE
@@ -71,10 +67,10 @@ async function loadUserProfile(token) {
         if (profile.paymentMethod) {
             document.getElementById('lblPayment').textContent = profile.paymentMethod;
         }
-        
+
         const prefList = document.getElementById('listPreferences');
         prefList.innerHTML = ''; // Pulisci
-        
+
         // Se ci sono categorie preferite
         if (profile.preferences && profile.preferences.favoriteCategories) {
             profile.preferences.favoriteCategories.forEach(cat => {
@@ -85,7 +81,7 @@ async function loadUserProfile(token) {
         } else {
             prefList.innerHTML = '<li>Nessuna preferenza specificata</li>';
         }
-    } 
+    }
     // Se è un RISTORATORE
     else if (user.role === 'RESTAURATEUR') {
         const section = document.getElementById('restaurateur-section');
@@ -106,17 +102,20 @@ async function loadUserProfile(token) {
     }
 }
 
-// 2. AGGIORNAMENTO DATI (PUT)
 async function updateUser() {
+
     const token = localStorage.getItem('token');
-    
+
     const updatedData = {
         firstName: document.getElementById('editFirstName').value,
         lastName: document.getElementById('editLastName').value,
         phoneNumber: document.getElementById('editPhone').value
     };
 
+    const newEmail = document.getElementById('editEmail').value;
+
     try {
+        // Update user data (escluso email)
         const response = await fetch(`${API_URL}/users/me`, {
             method: 'PUT',
             headers: {
@@ -126,26 +125,69 @@ async function updateUser() {
             body: JSON.stringify(updatedData)
         });
 
-        if (response.ok) {
-            // Chiudi modale
-            const modalEl = document.getElementById('editModal');
-            const modalInstance = bootstrap.Modal.getInstance(modalEl);
-            modalInstance.hide();
-            
-            showAlert('Dati aggiornati con successo!', 'success');
-            // Ricarica i dati a video
-            loadUserProfile(token); 
-        } else {
+        if (!response.ok) {
             const err = await response.json();
-            alert('Errore aggiornamento: ' + (err.message || 'Sconosciuto'));
+            showAlert(err.message || 'Errore aggiornamento dati', 'danger');
+            return;
         }
+
+        // Update email
+        const emailResponse = await fetch(`${API_URL}/users/me/email`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email: newEmail })
+        });
+
+        if (!emailResponse.ok) {
+            const err = await emailResponse.json();
+            showAlert(err.message || 'Errore aggiornamento email', 'danger');
+            return;
+        } else localStorage.setItem('email', newEmail);
+
+        // Close modal
+        const modalEl = document.getElementById('editModal');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        modalInstance.hide();
+
+        // Update UI
+        showAlert('Dati aggiornati con successo!', 'success');
+        loadUserProfile(token);
+
     } catch (error) {
         console.error(error);
-        alert('Errore di connessione');
+        showAlert('Errore di connessione', 'danger');
     }
 }
 
-// 3. ELIMINAZIONE ACCOUNT (DELETE)
+async function updatePassword() {
+
+    const token = localStorage.getItem('token');
+
+    const body = {
+        currentPassword: document.getElementById('currentPassword').value,
+        newPassword: document.getElementById('newPassword').value
+    };
+
+    const res = await fetch(`${API_URL}/users/me/password`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+        showAlert("Password aggiornata", "success");
+    } else {
+        const err = await res.json();
+        showAlert(err.message, "danger");
+    }
+}
+
 async function deleteAccount() {
     const token = localStorage.getItem('token');
 
