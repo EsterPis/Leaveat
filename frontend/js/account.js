@@ -32,8 +32,13 @@ async function initPage() {
 
         if (currentUser.role === "CUSTOMER") {
             currentCustomerPreferences = currentProfile.preferences || {};
+            selectedCategories = [...(currentCustomerPreferences.favoriteCategories || [])]
+            selectedRestaurants = (currentCustomerPreferences.favoriteRestaurantIds || [])
+                .map(r => typeof r === "object" ? r : { _id: r });
             loadCategories();
             loadRestaurants();
+            renderSelectedCategories();
+            renderSelectedRestaurants();
         }
 
     } catch (err) {
@@ -174,7 +179,7 @@ function renderFavoriteCategories(profile) {
 }
 
 
-function renderFavoriteRestaurants(profile) {
+async function renderFavoriteRestaurants(profile) {
 
     const list = document.getElementById("listRestaurants");
     list.innerHTML = "";
@@ -185,20 +190,12 @@ function renderFavoriteRestaurants(profile) {
         list.innerHTML = "<li>Nessun ristorante preferito</li>";
         return;
     }
-
     restaurants.forEach(r => {
-
         const li = document.createElement("li");
-
-        if (typeof r === "object")
-            li.textContent = r.displayName;
-        else
-            li.textContent = r;
-
+        li.textContent = r.displayName;
         list.appendChild(li);
 
     });
-
 }
 
 
@@ -338,6 +335,9 @@ async function updatePreferences() {
 
     const token = localStorage.getItem("token");
 
+    const currentCategories = currentCustomerPreferences.favoriteCategories || [];
+    const currentRestaurants = currentCustomerPreferences.favoriteRestaurantIds || [];
+    
     const body = {
         preferences: {
             favoriteCategories: selectedCategories,

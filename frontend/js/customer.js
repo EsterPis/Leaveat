@@ -11,6 +11,7 @@ async function loadCategories() {
   if (!out.success) return;
 
   const container = document.getElementById('categoriesList');
+  container.innerHTML = '';
 
   out.data.forEach(cat => {
     const btn = document.createElement('button');
@@ -67,6 +68,7 @@ async function loadRestaurants() {
   if (!out.success) return;
 
   const container = document.getElementById('restaurantsList');
+  container.innerHTML = '';
 
   out.data.forEach(r => {
     const btn = document.createElement('button');
