@@ -35,6 +35,10 @@ async function initPage() {
             selectedCategories = [...(currentCustomerPreferences.favoriteCategories || [])]
             selectedRestaurants = (currentCustomerPreferences.favoriteRestaurantIds || [])
                 .map(r => typeof r === "object" ? r : { _id: r });
+            const paymentSelect = document.getElementById("paymentMethodSelect");
+            if (paymentSelect) {
+                paymentSelect.value = currentProfile.paymentMethod || "CASH";
+            }
             loadCategories();
             loadRestaurants();
             renderSelectedCategories();
@@ -150,7 +154,16 @@ function renderCustomerSection(profile) {
 
 function renderPaymentMethod(profile) {
 
-    const payment = profile.paymentMethod || "Non specificato";
+    const paymentMap = {
+        CASH: "Contanti",
+        PREPAID_CARD: "Carta prepagata",
+        CREDIT_CARD: "Carta di credito"
+    };
+
+    const payment = profile.paymentMethod
+        ? paymentMap[profile.paymentMethod]
+        : "Non specificato";
+
     document.getElementById("lblPayment").textContent = payment;
 
 }
@@ -335,10 +348,9 @@ async function updatePreferences() {
 
     const token = localStorage.getItem("token");
 
-    const currentCategories = currentCustomerPreferences.favoriteCategories || [];
-    const currentRestaurants = currentCustomerPreferences.favoriteRestaurantIds || [];
-    
+    const paymentMethod = document.getElementById("paymentMethodSelect").value;
     const body = {
+        paymentMethod: paymentMethod,
         preferences: {
             favoriteCategories: selectedCategories,
             favoriteRestaurantIds: selectedRestaurants.map(r => r._id)
