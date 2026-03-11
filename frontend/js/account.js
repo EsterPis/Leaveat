@@ -4,6 +4,9 @@ let currentUser = null;
 let currentProfile = null;
 let currentCustomerPreferences = {};
 
+let selectedCategories = [];
+let selectedRestaurants = [];
+
 document.addEventListener('DOMContentLoaded', initPage);
 
 /* =========================
@@ -192,7 +195,7 @@ async function renderFavoriteRestaurants(profile) {
     }
     restaurants.forEach(r => {
         const li = document.createElement("li");
-        li.textContent = r.displayName;
+        li.textContent = r.displayName || r;
         list.appendChild(li);
 
     });
