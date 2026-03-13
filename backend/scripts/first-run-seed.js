@@ -1,6 +1,11 @@
+/**
+ * 
+ */
+
+/* A - IMPORTS */
 const path = require('path');
 require('dotenv').config({
-  path: require('path').resolve(__dirname, '../.env')
+    path: require('path').resolve(__dirname, '../.env')
 });
 const mongoose = require('mongoose');
 const fs = require('fs');
@@ -15,7 +20,9 @@ const Menu = require(path.join(modelsPath, 'Menu'));
 const Dish = require(path.join(modelsPath, 'Dish'));
 const Order = require(path.join(modelsPath, 'Order'));
 
-// Caricamento dataset meals.json
+/* B - SEED LOGIC */
+
+// Load meals from meals.json
 function loadMeals() {
     const filePath = path.join(__dirname, '../../data/meals.json');
     const raw = fs.readFileSync(filePath, 'utf-8');
@@ -43,10 +50,8 @@ async function seedDatabase() {
 
         console.log("✔ Database pulito");
 
-        // ---------------------------------------------------
-        // 1️⃣ IMPORT CATALOGO PIATTI (source = catalog)
-        // ---------------------------------------------------
-
+        /* B.1 - IMPORT DISHES */
+        // Loads meals from meals.json 
         const meals = loadMeals();
 
         const catalogDishes = meals.map(m => ({
@@ -66,9 +71,7 @@ async function seedDatabase() {
 
         console.log("✔ Catalogo importato");
 
-        // ---------------------------------------------------
-        // 2️⃣ CREAZIONE UTENTI
-        // ---------------------------------------------------
+        /* B.2 - USER CREATION*/
 
         const customerUser = await User.create({
             firstName: 'Mario',
@@ -79,6 +82,7 @@ async function seedDatabase() {
             role: 'CUSTOMER'
         });
 
+
         const restaurateurUser = await User.create({
             firstName: 'Carlo',
             lastName: 'Neri',
@@ -88,12 +92,29 @@ async function seedDatabase() {
             role: 'RESTAURATEUR'
         });
 
+        const restaurateurUser1 = await User.create({
+            firstName: 'Giovanni',
+            lastName: 'Neri',
+            email: 'giovanni@test.com',
+            password: 'password123',
+            phoneNumber: '3330000003',
+            role: 'RESTAURATEUR'
+        });
+
+        const restaurateurUser2 = await User.create({
+            firstName: 'Antonio',
+            lastName: 'Neri',
+            email: 'antonio@test.com',
+            password: 'password123',
+            phoneNumber: '3330000004',
+            role: 'RESTAURATEUR'
+        });
+
+
         console.log("✔ Utenti creati");
 
-        // ---------------------------------------------------
-        // 3️⃣ CUSTOMER PROFILE
-        // ---------------------------------------------------
-
+        /* B.3 - PROFILES */
+        // Customer profiles
         await Customer.create({
             userId: customerUser._id,
             preferences: {
@@ -105,10 +126,7 @@ async function seedDatabase() {
 
         console.log("✔ Profilo Customer creato");
 
-        // ---------------------------------------------------
-        // 4️⃣ RESTAURATEUR
-        // ---------------------------------------------------
-
+        // Restaurateur profiles
         const restaurateur = await Restaurateur.create({
             userId: restaurateurUser._id,
             VATNumber: 'IT12345678901',
@@ -118,15 +136,31 @@ async function seedDatabase() {
             IBAN: 'IT60X0542811101000000123456'
         });
 
+        const restaurateur1 = await Restaurateur.create({
+            userId: restaurateurUser1._id,
+            VATNumber: 'IT12345678902',
+            legalRepresentativeName: 'Giovanni Neri',
+            adminEmail: 'admin@trattoriacarlo.it',
+            bankAccountHolder: 'Carlo Neri',
+            IBAN: 'IT60X0542811101000000123456'
+        });
+
+        const restaurateur2 = await Restaurateur.create({
+            userId: restaurateurUser2._id,
+            VATNumber: 'IT12345678903',
+            legalRepresentativeName: 'Antonio Neri',
+            adminEmail: 'admin@trattoriacarlo.it',
+            bankAccountHolder: 'Carlo Neri',
+            IBAN: 'IT60X0542811101000000123456'
+        });
+
+
         console.log("✔ Profilo Restaurateur creato");
 
-        // ---------------------------------------------------
-        // 5️⃣ RESTAURANT
-        // ---------------------------------------------------
-
-        const restaurant = await Restaurant.create({
-            legalName: 'Neri Food S.R.L.',
-            displayName: 'Trattoria da Carlo',
+        /* B.4 - RESTAURANTS */
+        const restaurant0 = await Restaurant.create({
+            legalName: 'Neri Food S.R.L. 1',
+            displayName: 'Trattoria da Carlo 1',
             phoneNumber: '0299999999',
             email: 'info@trattoriacarlo.it',
             address: {
@@ -144,63 +178,123 @@ async function seedDatabase() {
             restaurateurId: restaurateur._id
         });
 
+        const restaurant1 = await Restaurant.create({
+            legalName: 'Neri Food S.R.L. 2',
+            displayName: 'Trattoria da Carlo 2',
+            phoneNumber: '0299999998',
+            email: 'info@trattoriacarlo.it',
+            address: {
+                street: 'Via Povia',
+                number: '11',
+                zip: '20100',
+                city: 'Milano',
+                province: 'MI'
+            },
+            openingHours: 'Lun-Dom 12:00 - 23:00',
+            description: 'Cucina italiana tradizionale',
+            websiteUrl: 'https://trattoriacarlo.it',
+            imageUrl: '',
+            status: 'ACTIVE',
+            restaurateurId: restaurateur._id
+        });
+
+        const restaurant2 = await Restaurant.create({
+            legalName: 'Giovanni Food S.R.L.',
+            displayName: 'Trattoria da Giovanni',
+            phoneNumber: '0299997999',
+            email: 'info@trattoriacarlo.it',
+            address: {
+                street: 'Via Roma',
+                number: '10',
+                zip: '20100',
+                city: 'Milano',
+                province: 'MI'
+            },
+            openingHours: 'Lun-Dom 12:00 - 23:00',
+            description: 'Cucina italiana tradizionale',
+            websiteUrl: 'https://trattoriacarlo.it',
+            imageUrl: '',
+            status: 'ACTIVE',
+            restaurateurId: restaurateur1._id
+        });
+
+        const restaurant3 = await Restaurant.create({
+            legalName: 'Antonio S.R.L.',
+            displayName: 'Trattoria da Antonio',
+            phoneNumber: '0299999989',
+            email: 'info@trattoriacarlo.it',
+            address: {
+                street: 'Via Roma',
+                number: '10',
+                zip: '20100',
+                city: 'Milano',
+                province: 'MI'
+            },
+            openingHours: 'Lun-Dom 12:00 - 23:00',
+            description: 'Cucina italiana tradizionale',
+            websiteUrl: 'https://trattoriacarlo.it',
+            imageUrl: 'https://media.macphun.com/img/uploads/macphun/blog/2986/image32.jpg?q=75&w=1710&h=906&resize=cover',
+            status: 'ACTIVE',
+            restaurateurId: restaurateur2._id
+        });
+
         console.log("✔ Ristorante creato");
 
-        // ---------------------------------------------------
-        // 6️⃣ COPIA PIATTI DAL CATALOGO PER IL MENU
-        // ---------------------------------------------------
+        /* B.5 - POPULATE MENU */
+        /* B.5 - POPULATE MENU */
 
         const sampleDishes = await Dish.find({ source: 'catalog' }).limit(5);
 
-        const restaurantDishIds = [];
+        const restaurants = [restaurant0, restaurant1, restaurant2, restaurant3];
 
-        for (const d of sampleDishes) {
-            const copiedDish = await Dish.create({
-                name: d.name,
-                category: d.category,
-                area: d.area,
-                image: d.image,
-                description: d.description,
-                ingredients: d.ingredients,
-                measures: d.measures,
-                price: d.price,
+        for (const restaurant of restaurants) {
+
+            const restaurantDishIds = [];
+
+            for (const d of sampleDishes) {
+
+                const copiedDish = await Dish.create({
+                    name: d.name,
+                    category: d.category,
+                    area: d.area,
+                    image: d.image,
+                    description: d.description,
+                    ingredients: d.ingredients,
+                    measures: d.measures,
+                    price: d.price,
+                    restaurantId: restaurant._id,
+                    source: 'restaurant'
+                });
+
+                restaurantDishIds.push(copiedDish._id);
+            }
+
+            const menu = await Menu.create({
                 restaurantId: restaurant._id,
-                source: 'restaurant'
+                dishIds: restaurantDishIds
             });
 
-            restaurantDishIds.push(copiedDish._id);
+            restaurant.menuId = menu._id;
+            await restaurant.save();
         }
 
-        console.log("✔ Piatti duplicati per il ristorante");
+        console.log("✔ Menu creati e collegati");
 
-        // ---------------------------------------------------
-        // 7️⃣ MENU
-        // ---------------------------------------------------
+        /* B.6 - ORDERS */
 
-        const menu = await Menu.create({
-            restaurantId: restaurant._id,
-            dishIds: restaurantDishIds
-        });
-
-        restaurant.menuId = menu._id;
-        await restaurant.save();
-
-        console.log("✔ Menu creato e collegato");
-
-        // ---------------------------------------------------
-        // 8️⃣ ORDINE DI TEST
-        // ---------------------------------------------------
+        // prendo un piatto appartenente al ristorante 0
+        const firstDish = await Dish.findOne({ restaurantId: restaurant0._id });
 
         const order = await Order.create({
-            customerId: customerUser._id, // ATTENZIONE: Order referenzia User
-            restaurantId: restaurant._id,
+            customerId: customerUser._id,
+            restaurantId: restaurant0._id,
             items: [
                 {
-                    dishId: restaurantDishIds[0],
+                    dishId: firstDish._id,
                     quantity: 2
                 }
             ],
-            totalPrice: sampleDishes[0].price * 2,
+            totalPrice: firstDish.price * 2,
             status: 'ORDINATO'
         });
 
