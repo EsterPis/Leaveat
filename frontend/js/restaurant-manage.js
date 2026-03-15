@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadRestaurantDetails();
     // Carica gli ordini
     loadOrders();
+    loadStats();
 });
 
 async function setupCloneInsideModal() {
@@ -580,4 +581,103 @@ function showOrderDetails(order) {
     document.getElementById('order-details-body').innerHTML = html;
 
     modal.show();
+}
+
+async function loadStats() {
+
+    try {
+
+        const response = await fetch(`/api/lv/restaurants/${restaurantId}/stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const json = await response.json();
+
+        if (!json.success) throw new Error(json.message);
+
+        const stats = json.data;
+
+        renderSummary(stats.summary);
+        renderOrdersChart(stats.ordersByDay);
+        renderTopDishesChart(stats.topDishes);
+
+    } catch (err) {
+
+        console.error(err);
+
+        document.getElementById('stats-pane').innerHTML =
+            `<div class="alert alert-danger">Errore caricamento statistiche</div>`;
+    }
+}
+
+function renderSummary(summary) {
+
+    document.getElementById('stat-total-orders').textContent =
+        summary.totalOrders;
+
+    document.getElementById('stat-completed-orders').textContent =
+        summary.completedOrders;
+
+    document.getElementById('stat-revenue').textContent =
+        `€${summary.revenue.toFixed(2)}`;
+
+    document.getElementById('stat-average').textContent =
+        `€${summary.avgOrder.toFixed(2)}`;
+}
+
+function renderOrdersChart(data) {
+
+    const labels = data.map(d => d._id);
+    const values = data.map(d => d.count);
+
+    const ctx = document.getElementById('ordersChart');
+
+    new Chart(ctx, {
+        type: 'line',
+
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Ordini',
+                data: values,
+                tension: 0.3
+            }]
+        },
+
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function renderTopDishesChart(data) {
+
+    const labels = data.map(d => d.name);
+    const values = data.map(d => d.totalSold);
+
+    const ctx = document.getElementById('topDishesChart');
+
+    new Chart(ctx, {
+
+        type: 'bar',
+
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Venduti',
+                data: values
+            }]
+        },
+
+        options: {
+            responsive: true,
+            indexAxis: 'y'
+        }
+
+    });
 }
