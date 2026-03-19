@@ -236,6 +236,41 @@ function renderRestaurateurSection(profile) {
     `;
 
 }
+async function updateFiscalData() {
+    const vat = document.getElementById("editVat").value;
+    const iban = document.getElementById("editIban").value;
+
+    try {
+        const res = await fetch("/api/lv/restaurateur/me", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + getToken()
+            },
+            body: JSON.stringify({
+                VATNumber: vat,
+                IBAN: iban
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            showAlert("Dati fiscali aggiornati", "success");
+
+            // aggiorna UI
+            document.getElementById("lblVat").textContent = vat;
+            document.getElementById("lblIban").textContent = iban;
+
+            bootstrap.Modal.getInstance(document.getElementById("fiscalModal")).hide();
+        } else {
+            showAlert(data.message, "danger");
+        }
+
+    } catch (err) {
+        showAlert("Errore aggiornamento dati fiscali", "danger");
+    }
+}
 
 
 /* =========================

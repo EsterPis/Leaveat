@@ -41,4 +41,44 @@ router.post(
   }
 );
 
+router.put('/me', authMiddleware, async (req, res) => {
+  try {
+    const { VATNumber, IBAN } = req.body;
+
+    const restaurateur = await Restaurateur.findOne({ userId: req.user.id });
+
+    if (!restaurateur) {
+      return res.status(404).json({
+        success: false,
+        message: "Ristoratore non trovato"
+      });
+    }
+
+    // aggiorno solo i campi passati
+    if (VATNumber) restaurateur.VATNumber = VATNumber;
+    if (IBAN) restaurateur.IBAN = IBAN;
+
+    await restaurateur.save();
+
+    res.json({
+      success: true,
+      message: "Dati fiscali aggiornati",
+      data: restaurateur
+    });
+
+  } catch (err) {
+    console.error(err);
+    if (err.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "Partita IVA già esistente"
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: "Errore server"
+    });
+  }
+});
+
 module.exports = router;

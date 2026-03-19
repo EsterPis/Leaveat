@@ -80,6 +80,10 @@
                     <div class="card-body text-center">
                         <p class="text-start"><strong>Partita IVA:</strong> <span id="lblVat">...</span></p>
                         <p class="text-start"><strong>IBAN:</strong> <span id="lblIban">...</span></p>
+                        <button class="btn btn-outline-warning mt-3 w-100" data-bs-toggle="modal"
+                            data-bs-target="#fiscalModal">
+                            <i class="bi bi-pencil"></i> Modifica dati fiscali
+                        </button>
                         <hr>
                         <p class="card-text">Gestisci i tuoi ristoranti, menù e ordini.</p>
                         <a href="restaurateur-dashboard.html" class="btn btn-warning w-100 py-3">
@@ -200,6 +204,38 @@
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
                     <button class="btn btn-success" onclick="updatePreferences()">Salva</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!-- Fiscal modal -->
+    <div class="modal fade" id="fiscalModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Modifica dati fiscali</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label">Partita IVA</label>
+                        <input type="text" id="editVat" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">IBAN</label>
+                        <input type="text" id="editIban" class="form-control" required>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button class="btn btn-warning" onclick="updateFiscalData()">Salva</button>
                 </div>
 
             </div>
