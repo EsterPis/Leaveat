@@ -100,52 +100,51 @@ router.post('/login', async (req, res) => {
 
 
 router.get('/me', authMiddleware, async (req, res) => {
-  try {
+    try {
 
-    const user = await User
-      .findById(req.user.id)
-      .select('-password');
+        const user = await User
+            .findById(req.user.id)
+            .select('-password');
 
-    if (!user)
-      return res.status(404).json({
-        success: false,
-        message: 'Utente non trovato'
-      });
+        if (!user)
+            return res.status(404).json({
+                success: false,
+                message: 'Utente non trovato'
+            });
 
-    let profile = null;
+        let profile = null;
 
-    if (user.role === 'CUSTOMER') {
+        if (user.role === 'CUSTOMER') {
 
-      profile = await Customer
-        .findOne({ userId: user._id })
-        .populate('preferences.favoriteRestaurantIds', 'displayName');
+            profile = await Customer
+                .findOne({ userId: user._id })
+                .populate('preferences.favoriteRestaurantIds', 'displayName');
+
+        }
+
+        if (user.role === 'RESTAURATEUR') {
+
+            profile = await Restaurateur
+                .findOne({ userId: user._id });
+
+        }
+
+        res.json({
+            success: true,
+            user,
+            profile
+        });
+
+
+    } catch (err) {
+
+        return res.status(500).json({
+            success: false,
+            message: 'Errore server',
+            error: err.message
+        });
 
     }
-
-    if (user.role === 'RESTAURATEUR') {
-
-      profile = await Restaurateur
-        .findOne({ userId: user._id });
-
-    }
-
-    return res.json({
-      success: true,
-      data: {
-        user,
-        profile
-      }
-    });
-
-  } catch (err) {
-
-    return res.status(500).json({
-      success: false,
-      message: 'Errore server',
-      error: err.message
-    });
-
-  }
 });
 
 router.put('/me', authMiddleware, async (req, res) => {
