@@ -58,7 +58,7 @@ async function connectDB() {
     console.error('Missing MONGO_URI in .env');
     process.exit(1);
   }
-  await mongoose.connect(uri, { dbName });
+  await mongoose.connect(uri, { dbName});
   console.log('MongoDB connected');
 }
 
