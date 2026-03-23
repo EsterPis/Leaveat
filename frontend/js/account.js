@@ -241,7 +241,7 @@ async function updateFiscalData() {
     const iban = document.getElementById("editIban").value;
 
     try {
-        const res = await fetch("/api/lv/restaurateur/me", {
+        const res = await fetch("/api/lv/restaurateurs/me", {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",

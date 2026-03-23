@@ -15,6 +15,7 @@ const express = require('express');
 const router = express.Router();
 const { completeRegistration } = require('../utils/restaurateurService'); //logica di completamento registrazione
 const { authMiddleware, requireRole } = require('../middleware/auth');
+const Restaurateur = require('../models/Restaurateur');
 
 router.post(
   '/complete-registration',
