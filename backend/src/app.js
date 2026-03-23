@@ -9,7 +9,7 @@
 
 /* A → IMPORT MODULES */
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
-console.log('MONGO_URI:', process.env.MONGO_URI); 
+//console.log('MONGO_URI:', process.env.MONGO_URI); 
 const express = require('express'); //middelware 
 const mongoose = require('mongoose'); //interfaccia con mongoDB
 const cors = require('cors'); //permette al frontend di comunicare con il backend senza blocchi di sicurezza

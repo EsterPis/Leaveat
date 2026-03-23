@@ -236,6 +236,18 @@ function renderRestaurateurSection(profile) {
     `;
 
 }
+
+//Render modal with current fiscal data
+const fiscalModal = document.getElementById('fiscalModal');
+
+fiscalModal.addEventListener('show.bs.modal', () => {
+    const currentVat = document.getElementById('lblVat').textContent.trim();
+    const currentIban = document.getElementById('lblIban').textContent.trim();
+
+    document.getElementById('editVat').value = currentVat;
+    document.getElementById('editIban').value = currentIban;
+});
+
 async function updateFiscalData() {
     const vat = document.getElementById("editVat").value;
     const iban = document.getElementById("editIban").value;
