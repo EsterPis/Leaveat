@@ -21,6 +21,7 @@ const authRoutes = require('./routes/auth');
 const customerRoutes = require('./routes/customers'); 
 const restaurateurRoutes = require('./routes/restaurateurs'); 
 const restaurantRoutes = require('./routes/restaurants'); 
+const statisticsRoutes = require('./routes/statistics');
 const dishRoutes = require('./routes/dishes'); 
 const categoryRoutes = require('./routes/categories');
 const orderRoutes = require('./routes/orders'); 
@@ -43,6 +44,7 @@ app.use('/api/lv/categories', categoryRoutes);
 app.use('/api/lv/customers', customerRoutes);
 app.use('/api/lv/restaurateurs', restaurateurRoutes);
 app.use('/api/lv/restaurants', restaurantRoutes);
+app.use('/api/lv/restaurants', statisticsRoutes);
 app.use('/api/lv/dishes', dishRoutes);
 app.use('/api/lv/orders', orderRoutes);
 
@@ -56,7 +58,7 @@ async function connectDB() {
     console.error('Missing MONGO_URI in .env');
     process.exit(1);
   }
-  await mongoose.connect(uri, { dbName });
+  await mongoose.connect(uri, { dbName});
   console.log('MongoDB connected');
 }
 
