@@ -4,14 +4,12 @@ let currentUser = null;
 let currentProfile = null;
 let currentCustomerPreferences = {};
 
-let selectedCategories = [];
-let selectedRestaurants = [];
+//let selectedCategories = [];
+//let selectedRestaurants = [];
 
 document.addEventListener('DOMContentLoaded', initPage);
 
-/* =========================
-   PAGE INIT
-========================= */
+/* A → PAGE INIT */
 
 async function initPage() {
 
@@ -48,6 +46,16 @@ async function initPage() {
             renderSelectedRestaurants();
         }
 
+        const ibanInput = document.getElementById("editIban");
+
+        if (ibanInput) {
+            ibanInput.addEventListener("input", (e) => {
+                let value = e.target.value.replace(/\s+/g, '').toUpperCase();
+                e.target.value = value.match(/.{1,4}/g)?.join(' ') || value;
+            });
+        }
+
+
     } catch (err) {
 
         console.error(err);
@@ -57,9 +65,7 @@ async function initPage() {
 }
 
 
-/* =========================
-   API CALLS
-========================= */
+/* B → API CALLS */
 
 async function fetchUserProfile(token) {
 
@@ -100,9 +106,7 @@ async function fetchUserProfile(token) {
 }
 
 
-/* =========================
-   UI RENDER
-========================= */
+/* C → UI RENDER */
 
 function renderUserData(user) {
 
@@ -123,10 +127,22 @@ function populateEditForm(user) {
 
 }
 
+function showAlert(message, type) {
 
-/* =========================
-   ROLE MANAGEMENT
-========================= */
+    const alertBox = document.getElementById("alertMessage");
+
+    alertBox.className = `alert alert-${type}`;
+    alertBox.textContent = message;
+    alertBox.classList.remove("d-none");
+
+    setTimeout(() => {
+        alertBox.classList.add("d-none");
+    }, 5000);
+
+}
+
+
+/* D → ROLE MANAGEMENT */
 
 function renderRoleSection(user, profile) {
 
@@ -139,9 +155,7 @@ function renderRoleSection(user, profile) {
 }
 
 
-/* =========================
-   CUSTOMER SECTION
-========================= */
+/* E → CUSTOMER SECTION */
 
 function renderCustomerSection(profile) {
 
@@ -214,10 +228,54 @@ async function renderFavoriteRestaurants(profile) {
     });
 }
 
+//Update customer preferences (payment method, favorite categories, favorite restaurants)
+async function updatePreferences() {
 
-/* =========================
-   RESTAURATEUR SECTION
-========================= */
+    const token = localStorage.getItem("token");
+
+    const paymentMethod = document.getElementById("paymentMethodSelect").value;
+    const body = {
+        paymentMethod: paymentMethod,
+        preferences: {
+            favoriteCategories: selectedCategories,
+            favoriteRestaurantIds: selectedRestaurants.map(r => r._id)
+        }
+    };
+
+    try {
+
+        const res = await fetch(`${API_URL}/customers/me`, {
+            method: "PUT",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(body)
+        });
+
+        const out = await res.json();
+
+        if (!out.success)
+            throw new Error(out.message);
+
+        showAlert("Preferenze aggiornate", "success");
+
+        bootstrap.Modal.getInstance(
+            document.getElementById("preferencesModal")
+        ).hide();
+
+        initPage();
+
+    } catch (err) {
+
+        showAlert(err.message, "danger");
+
+    }
+
+}
+
+
+/* F → RESTAURATEUR SECTION */
 
 function renderRestaurateurSection(profile) {
 
@@ -250,7 +308,18 @@ fiscalModal.addEventListener('show.bs.modal', () => {
 
 async function updateFiscalData() {
     const vat = document.getElementById("editVat").value;
-    const iban = document.getElementById("editIban").value;
+    let iban = document.getElementById("editIban").value;
+
+    iban = iban.replace(/\s+/g, '').toUpperCase(); // Normalizza IBAN
+    if (!isValidVAT(vat)) {
+        showAlert("Partita IVA non valida (11 cifre)", "danger");
+        return;
+    }
+
+    if (!isValidIBAN(iban)) {
+        showAlert("IBAN non valido (formato IT...)", "danger");
+        return;
+    }
 
     try {
         const res = await fetch("/api/lv/restaurateurs/me", {
@@ -284,11 +353,22 @@ async function updateFiscalData() {
     }
 }
 
+function isValidVAT(vat) {
+    return /^[0-9]{11}$/.test(vat);
+}
 
-/* =========================
-   UPDATE USER
-========================= */
+function isValidIBAN(iban) {
+    if (!iban) return false;
 
+    const cleaned = iban.replace(/\s+/g, '').toUpperCase();
+
+    return /^IT\d{2}[A-Z]\d{10}[0-9A-Z]{12}$/.test(cleaned);
+}
+
+
+/* G → USER SECTION*/
+
+//Update user data (name, phone, email)
 async function updateUser() {
 
     const token = localStorage.getItem("token");
@@ -352,11 +432,7 @@ async function updateUser() {
 
 }
 
-
-/* =========================
-   PASSWORD UPDATE
-========================= */
-
+//Update user password
 async function updatePassword() {
     const token = localStorage.getItem("token");
 
@@ -389,61 +465,7 @@ async function updatePassword() {
 
 }
 
-
-/* =========================
-   PREFERENCES UPDATE
-========================= */
-
-async function updatePreferences() {
-
-    const token = localStorage.getItem("token");
-
-    const paymentMethod = document.getElementById("paymentMethodSelect").value;
-    const body = {
-        paymentMethod: paymentMethod,
-        preferences: {
-            favoriteCategories: selectedCategories,
-            favoriteRestaurantIds: selectedRestaurants.map(r => r._id)
-        }
-    };
-
-    try {
-
-        const res = await fetch(`${API_URL}/customers/me`, {
-            method: "PUT",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(body)
-        });
-
-        const out = await res.json();
-
-        if (!out.success)
-            throw new Error(out.message);
-
-        showAlert("Preferenze aggiornate", "success");
-
-        bootstrap.Modal.getInstance(
-            document.getElementById("preferencesModal")
-        ).hide();
-
-        initPage();
-
-    } catch (err) {
-
-        showAlert(err.message, "danger");
-
-    }
-
-}
-
-
-/* =========================
-   DELETE ACCOUNT
-========================= */
-
+//Delete user account (with confirmation)
 async function deleteAccount() {
 
     const token = localStorage.getItem("token");
@@ -476,21 +498,3 @@ async function deleteAccount() {
 
 }
 
-
-/* =========================
-   ALERT
-========================= */
-
-function showAlert(message, type) {
-
-    const alertBox = document.getElementById("alertMessage");
-
-    alertBox.className = `alert alert-${type}`;
-    alertBox.textContent = message;
-    alertBox.classList.remove("d-none");
-
-    setTimeout(() => {
-        alertBox.classList.add("d-none");
-    }, 5000);
-
-}
