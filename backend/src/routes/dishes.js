@@ -26,78 +26,58 @@ async function verifyOwnership(userId, restaurantId) {
 
 
 /* B → PUBLIC CATALOG ROUTES */
-
-// GET /api/lv/dishes
-// Returns public catalog dishes with optional filters
 router.get('/', async (req, res) => {
   try {
-    const { name, category, ingredient, maxPrice } = req.query;
-    const query = { source: 'catalog' };
+    const { name, category, maxPrice, ingredient, dishIds } = req.query;
 
-    if (name) query.name = { $regex: name, $options: 'i' };
-    if (category) query.category = { $regex: category, $options: 'i' };
-    if (ingredient) query.ingredients = { $regex: ingredient, $options: 'i' };
-    if (maxPrice) query.price = { $lte: Number(maxPrice) };
+    let filter = {};
 
-    const dishes = await Dish.find(query).limit(50);
+    console.log("REQ QUERY:", req.query);
+    console.log("DISH IDS RAW:", dishIds);
+
+    // filtro per ID piatti del menu
+    if (dishIds) {
+      const idsArray = dishIds.split(',').map(id => new mongoose.Types.ObjectId(id));
+      filter._id = { $in: idsArray };
+    }
+
+    // Nome
+    if (name) {
+      filter.name = { $regex: name, $options: 'i' };
+    }
+
+    // Categoria
+    if (category) {
+      filter.category = category;
+    }
+
+    // Prezzo
+    if (maxPrice) {
+      filter.price = { $lte: Number(maxPrice) };
+    }
+
+    // Ingredienti
+    if (ingredient) {
+      filter.ingredients = { $regex: ingredient, $options: 'i' };
+    }
+
+    console.log("FILTER FINALE:", filter);
+
+    const dishes = await Dish.find(filter);
 
     res.json({
       success: true,
-      count: dishes.length,
       data: dishes
     });
 
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// GET /api/lv/dishes/catalog
-// Returns full catalog for restaurateurs
-router.get('/catalog', authMiddleware, async (req, res) => {
-  try {
-    if (req.user.role !== 'RESTAURATEUR') {
-      return res.status(403).json({ success: false, message: 'Access denied' });
-    }
-
-    const { name, category, ingredient, maxPrice } = req.query;
-    const query = { source: 'catalog' };
-
-    if (name) query.name = { $regex: name, $options: 'i' };
-    if (category) query.category = { $regex: category, $options: 'i' };
-    if (ingredient) query.ingredients = { $regex: ingredient, $options: 'i' };
-    if (maxPrice) query.price = { $lte: Number(maxPrice) };
-
-    const dishes = await Dish.find(query).sort({ name: 1 });
-
-    res.json({
-      success: true,
-      count: dishes.length,
-      data: dishes
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: "Errore nel recupero dei piatti"
     });
-
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// GET /api/lv/dishes/:id
-// Returns single dish by id
-router.get('/:id', async (req, res) => {
-  try {
-    const dish = await Dish.findById(req.params.id);
-
-    if (!dish) {
-      return res.status(404).json({ success: false, message: 'Dish not found' });
-    }
-
-    res.json({ success: true, data: dish });
-
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
 
 /* C → RESTAURATEUR DISH MANAGEMENT */
 

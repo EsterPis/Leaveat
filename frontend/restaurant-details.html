@@ -46,42 +46,88 @@
 
         <!-- Sezione menu -->
         <h3 class="mb-3">Menu</h3>
+        <div class="card mb-4">
+            <div class="card-body">
+
+                <div class="row g-3">
+
+                    <!-- Nome -->
+                    <div class="col-md-3">
+                        <input type="text" id="filterName" class="form-control" placeholder="Nome piatto">
+                    </div>
+
+                    <!-- Categoria -->
+                    <div class="col-md-3">
+                        <select id="filterCategory" class="form-select">
+                            <option value="">Tutte le categorie</option>
+                        </select>
+                    </div>
+
+                    <!-- Prezzo max -->
+                    <div class="col-md-3">
+                        <input type="number" id="filterPrice" class="form-control" placeholder="Prezzo massimo">
+                    </div>
+
+                    <!-- Ingredienti -->
+                    <div class="col-md-3">
+                        <input type="text" id="filterIngredients" class="form-control" placeholder="Ingrediente">
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
         <div id="menuContainer" class="row g-3"></div>
 
     </main>
 
     <script>
-        // ----------------------------------------------------
-        // Recupera ID dalla query string
-        // ----------------------------------------------------
-        function getRestaurantId() {
-            const params = new URLSearchParams(window.location.search);
-            return params.get('id');
-        }
 
-        // ----------------------------------------------------
-        // Carica dettagli ristorante
-        // ----------------------------------------------------
-        async function loadRestaurant() {
-            const restaurantId = getRestaurantId();
+        // =============================
+        // STATE
+        // =============================
+        let currentDishes = [];
+        let currentDishIds = [];
+        let restaurantId = null;
+
+
+        // =============================
+        // INIT APP (MAIN)
+        // =============================
+        function initPage() {
+            restaurantId = getRestaurantId();
 
             if (!restaurantId) {
                 alert("Ristorante non valido.");
                 return;
             }
 
+            loadRestaurantData();
+            updateCartBadge();
+        }
+
+
+        // =============================
+        // API
+        // =============================
+        async function loadRestaurantData() {
             try {
                 const response = await fetch(`/api/lv/restaurants/${restaurantId}`);
                 const result = await response.json();
 
-                if (!result.success) {
-                    throw new Error(result.message);
-                }
+                if (!result.success) throw new Error(result.message);
 
                 const restaurant = result.data;
 
                 renderRestaurantInfo(restaurant);
-                renderMenu(restaurant.menuId?.dishIds || []);
+
+                const dishes = restaurant.menuId?.dishIds || [];
+                currentDishIds = dishes.map(d => d._id);
+                console.log("DISH IDS:", currentDishIds);
+                currentDishes = dishes;
+
+                renderMenu(dishes);
+                initFilters(dishes);
 
             } catch (err) {
                 console.error("Errore caricamento ristorante:", err);
@@ -89,9 +135,19 @@
             }
         }
 
-        // ----------------------------------------------------
-        // Rendering info ristorante
-        // ----------------------------------------------------
+
+        // =============================
+        // UTILS
+        // =============================
+        function getRestaurantId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+
+        // =============================
+        // RENDER
+        // =============================
         function renderRestaurantInfo(r) {
 
             const container = document.getElementById('restaurantInfo');
@@ -107,95 +163,180 @@
                 : "/assets/logo-default.jpg";
 
             container.innerHTML = `
-    <div class="card shadow-sm">
-      <img src="${imageSrc}"
-           onerror="this.src='/assets/logo-default.jpg'"
-           class="card-img-top"
-           alt="${name}"
-           style="height:250px; object-fit:cover;">
+        <div class="card shadow-sm">
+            <img src="${imageSrc}"
+                 onerror="this.src='/assets/logo-default.jpg'"
+                 class="card-img-top"
+                 style="height:250px; object-fit:cover;">
 
-      <div class="card-body">
-        <h2 class="card-title">${name}</h2>
-
-        <p class="text-muted mb-2">
-          ${address}
-        </p>
-
-        <p class="mb-1">
-          <strong>Telefono:</strong> ${r.phoneNumber || "Non disponibile"}
-        </p>
-
-        <p class="mb-0">
-          <strong>Email:</strong> ${r.email || "Non disponibile"}
-        </p>
-      </div>
-    </div>
-  `;
+            <div class="card-body">
+                <h2>${name}</h2>
+                <p class="text-muted">${address}</p>
+                <p><strong>Telefono:</strong> ${r.phoneNumber || "Non disponibile"}</p>
+                <p><strong>Email:</strong> ${r.email || "Non disponibile"}</p>
+            </div>
+        </div>
+    `;
         }
 
-        // ----------------------------------------------------
-        // Rendering menu piatti
-        // ----------------------------------------------------
+
         function renderMenu(dishes) {
-            window.currentDishes = dishes;
-            console.log(dishes);
             const container = document.getElementById('menuContainer');
             container.innerHTML = '';
 
             if (!dishes.length) {
                 container.innerHTML = `
-      <div class="col-12">
-        <div class="alert alert-info">
-          Nessun piatto disponibile.
-        </div>
-      </div>
-    `;
+            <div class="col-12">
+                <div class="alert alert-info">Nessun piatto disponibile.</div>
+            </div>
+        `;
                 return;
             }
 
-            dishes.forEach(d => {
+            dishes.forEach(d => container.appendChild(createDishCard(d)));
+        }
 
-                const imageSrc = (d.image && d.image.trim() !== "")
-                    ? d.image
-                    : "/assets/logo-default.png";
 
-                const col = document.createElement('div');
-                col.className = 'col-12 col-md-6 col-lg-4';
+        function createDishCard(d) {
+            const col = document.createElement('div');
+            col.className = 'col-12 col-md-6 col-lg-4';
 
-                col.innerHTML = `
-      <div class="card h-100 shadow-sm">
+            const imageSrc = (d.image && d.image.trim() !== "")
+                ? d.image
+                : "/assets/logo-default.png";
 
-        <img src="${imageSrc}"
-             onerror="this.src='/assets/logo-default.jpg'"
-             class="card-img-top"
-             alt="${d.name}"
-             style="height:200px; object-fit:cover;">
+            col.innerHTML = `
+        <div class="card h-100 shadow-sm">
 
-        <div class="card-body d-flex flex-column">
-          <h5 class="card-title">${d.name}</h5>
+            <img src="${imageSrc}"
+                 onerror="this.src='/assets/logo-default.jpg'"
+                 class="card-img-top"
+                 style="height:200px; object-fit:cover;">
 
-          <p class="card-text small text-muted">
-            ${d.category || ""}
-          </p>
+            <div class="card-body d-flex flex-column">
+                <h5>${d.name}</h5>
 
-          <p class="card-text">
-            € ${Number(d.price).toFixed(2)}
-          </p>
+                <p class="small text-muted">${d.category || ""}</p>
 
-          <button class="btn btn-primary btn-sm mt-auto"
-                  onclick="addToCart('${d._id}')">
-            Aggiungi al carrello
-          </button>
+                <p>€ ${Number(d.price).toFixed(2)}</p>
+
+                <button class="btn btn-primary btn-sm mt-auto"
+                        onclick="addToCart('${d._id}')">
+                    Aggiungi al carrello
+                </button>
+            </div>
         </div>
-      </div>
     `;
 
-                container.appendChild(col);
+            return col;
+        }
+
+
+        // =============================
+        // FILTERS
+        // =============================
+        function initFilters(dishes) {
+            populateCategoryFilter(dishes);
+            attachFilterEvents();
+        }
+
+
+        function populateCategoryFilter(dishes) {
+            const select = document.getElementById('filterCategory');
+            const categories = [...new Set(dishes.map(d => d.category).filter(Boolean))];
+
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                select.appendChild(option);
             });
         }
 
-        // ================= CARRELLO =================
 
+        function attachFilterEvents() {
+            document.getElementById('filterName').addEventListener('input', applyFilters);
+            document.getElementById('filterCategory').addEventListener('change', applyFilters);
+            document.getElementById('filterPrice').addEventListener('input', applyFilters);
+            document.getElementById('filterIngredients').addEventListener('input', applyFilters);
+        }
+
+        function buildQueryParams(filters) {
+            const params = new URLSearchParams();
+
+            if (filters.name) params.append('name', filters.name);
+            if (filters.category) params.append('category', filters.category);
+            if (!isNaN(filters.maxPrice)) params.append('maxPrice', filters.maxPrice);
+            if (filters.ingredient) params.append('ingredient', filters.ingredient);
+            if (currentDishIds.length) {
+                params.append('dishIds', currentDishIds.join(','));
+            }
+
+            return params.toString();
+        }
+
+
+        async function applyFilters() {
+            const filters = getFilterValues();
+            const query = buildQueryParams(filters);
+            console.log("CHIAMO API:", `/api/lv/dishes?${query}`)
+
+            try {
+                const response = await fetch(`/api/lv/dishes?${query}`);
+                console.log("RISPOSTA FETCH:", response);
+                const result = await response.json();
+
+                if (!result.success) throw new Error(result.message);
+                
+
+                renderMenu(result.data);
+
+            } catch (err) {
+                console.error("Errore filtro piatti:", err);
+            }
+        }
+
+
+        function getFilterValues() {
+            return {
+                name: document.getElementById('filterName').value.toLowerCase(),
+                category: document.getElementById('filterCategory').value,
+                maxPrice: parseFloat(document.getElementById('filterPrice').value),
+                ingredient: document.getElementById('filterIngredients').value.toLowerCase()
+            };
+        }
+
+
+        function filterDishes(dishes, filters) {
+            return dishes.filter(d => {
+
+                if (filters.name && !d.name.toLowerCase().includes(filters.name)) {
+                    return false;
+                }
+
+                if (filters.category && d.category !== filters.category) {
+                    return false;
+                }
+
+                if (!isNaN(filters.maxPrice) && d.price > filters.maxPrice) {
+                    return false;
+                }
+
+                if (filters.ingredient) {
+                    const match = d.ingredients.some(i =>
+                        i.toLowerCase().includes(filters.ingredient)
+                    );
+                    if (!match) return false;
+                }
+
+                return true;
+            });
+        }
+
+
+        // =============================
+        // CART
+        // =============================
         function getCart() {
             return JSON.parse(localStorage.getItem("cart")) || null;
         }
@@ -220,19 +361,16 @@
             badge.textContent = totalItems;
         }
 
+
         function addToCart(dishId) {
 
             const cart = getCart();
-            const restaurantId = getRestaurantId();
+            const dish = currentDishes.find(d => d._id === dishId);
 
-            const dish = window.currentDishes.find(d => d._id === dishId);
             if (!dish) return;
 
-            // Se carrello esiste e appartiene a ristorante diverso → blocco
             if (cart && cart.restaurantId !== restaurantId) {
-                if (!confirm("Hai già piatti di un altro ristorante. Vuoi svuotare il carrello?")) {
-                    return;
-                }
+                if (!confirm("Hai già piatti di un altro ristorante. Vuoi svuotare il carrello?")) return;
                 localStorage.removeItem("cart");
             }
 
@@ -257,11 +395,12 @@
             saveCart(newCart);
         }
 
-        updateCartBadge();
-        // ----------------------------------------------------
-        // Avvio pagina
-        // ----------------------------------------------------
-        loadRestaurant();
+
+        // =============================
+        // START
+        // =============================
+        initPage();
+
     </script>
 
     <script src="/js/session.js"></script>
