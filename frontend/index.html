@@ -43,14 +43,20 @@
 
       <!-- Ricerca ristorante -->
       <form id="searchForm" class="row g-2">
-        <div class="col-sm-8">
+        <div class="col-md-5">
           <input class="form-control" name="name" placeholder="Cerca per nome ristorante">
         </div>
-        <div class="col-sm-4">
+        <div class="col-md-5">
+          <input class="form-control" name="city" placeholder="Cerca per città">
+        </div>
+        <div class="col-md-2">
           <button class="btn btn-primary w-100">Cerca</button>
         </div>
       </form>
-    </div>
+
+      <div id="noResults" class="text-center text-muted mt-3" style="display:none;">
+        Nessun ristorante trovato
+      </div>
   </header>
 
   <!-- ================= RISULTATI ================= -->
@@ -62,6 +68,7 @@
   <script>
     const form = document.getElementById('searchForm');
     const results = document.getElementById('results');
+    const noResults = document.getElementById('noResults');
 
     // ----------------------------------------------------
     // Carica ristoranti dal backend
@@ -73,8 +80,16 @@
         const data = await response.json();
 
         results.innerHTML = '';
+        const restaurants = data.data || [];
 
-        (data.data || []).forEach(r => {
+        if (restaurants.length === 0) {
+          noResults.style.display = 'block';
+          return;
+        }
+
+        noResults.style.display = 'none';
+
+        restaurants.forEach(r => {
 
           // Nome corretto dal tuo schema
           const name = r.displayName || r.legalName || "Ristorante";
@@ -131,6 +146,28 @@
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const formData = Object.fromEntries(new FormData(form).entries());
+      fetchRestaurants(formData);
+    });
+
+    form.addEventListener('input', () => {
+      const formData = Object.fromEntries(new FormData(form).entries());
+
+      // Se entrambi vuoti → ricarica tutto
+      if (!formData.name && !formData.city) {
+        fetchRestaurants({});
+      }
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      let formData = Object.fromEntries(new FormData(form).entries());
+
+      // Rimuove campi vuoti
+      Object.keys(formData).forEach(key => {
+        if (!formData[key]) delete formData[key];
+      });
+
       fetchRestaurants(formData);
     });
 

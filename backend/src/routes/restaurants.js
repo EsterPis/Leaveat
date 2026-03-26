@@ -27,20 +27,33 @@ async function checkOwnership(userId, restaurantId) {
 // GET /api/lv/restaurants
 // Restituisce la lista di tutti i ristoranti (es. per la Home Page)
 router.get('/', async (req, res) => {
-    try {
-        // Selezioniamo solo i campi utili per la lista (leggero)
-        // Filtriamo per status 'ACTIVE' se vuoi mostrare solo quelli pronti
-        const restaurants = await Restaurant.find({ status: 'ACTIVE' })
-            .select('displayName address openingHours imageUrl category tags');
+  try {
+    const { name, city } = req.query;
 
-        res.status(200).json({
-            success: true,
-            data: restaurants
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Errore server' });
+    let filter = { status: 'ACTIVE' };
+
+    // Filtro per nome (case insensitive)
+    if (name) {
+      filter.displayName = { $regex: name, $options: 'i' };
     }
+
+    // Filtro per città
+    if (city) {
+      filter['address.city'] = { $regex: city, $options: 'i' };
+    }
+
+    const restaurants = await Restaurant.find(filter)
+      .select('displayName address openingHours imageUrl category tags');
+
+    res.status(200).json({
+      success: true,
+      data: restaurants
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Errore server' });
+  }
 });
 
 // GET /api/lv/restaurants/my-restaurants
