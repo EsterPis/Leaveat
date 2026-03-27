@@ -472,6 +472,13 @@ if (btnSearchCatalog) {
         }
     });
 }
+const ingredientInput = document.getElementById('catalog-ingredient-filter');
+if (ingredientInput) {
+    ingredientInput.addEventListener('input', () => {
+        const query = document.getElementById('catalog-search-input').value;
+        loadCatalogList(query);
+    });
+}
 
 async function importDish(catalogDishId) {
     const price = prompt("Inserisci il prezzo di vendita per questo piatto (es. 12.50):");
@@ -523,8 +530,12 @@ async function loadCatalogList(nameQuery = '') {
         const params = new URLSearchParams();
 
         if (nameQuery) params.append('name', nameQuery);
+
         const category = document.getElementById('catalog-category-filter')?.value;
         if (category) params.append('category', category);
+
+        const ingredient = document.getElementById('catalog-ingredient-filter')?.value;
+        if (ingredient) params.append('ingredient', ingredient);
 
         // solo catalogo
         params.append('source', 'catalog');
