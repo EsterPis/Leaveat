@@ -126,12 +126,31 @@
                 console.log("DISH IDS:", currentDishIds);
                 currentDishes = dishes;
 
-                renderMenu(dishes);
-                initFilters(dishes);
-
+                await loadInitialDishes();
             } catch (err) {
                 console.error("Errore caricamento ristorante:", err);
                 alert("Errore nel caricamento del ristorante.");
+            }
+        }
+
+        async function loadInitialDishes() {
+            try {
+                const query = `dishIds=${currentDishIds.join(',')}`;
+
+                console.log("LOAD INIT:", `/api/lv/dishes?${query}`);
+
+                const response = await fetch(`/api/lv/dishes?${query}`);
+                const result = await response.json();
+
+                if (!result.success) throw new Error(result.message);
+
+                currentDishes = result.data;
+
+                renderMenu(result.data);
+                initFilters(result.data);
+
+            } catch (err) {
+                console.error("Errore caricamento iniziale piatti:", err);
             }
         }
 
@@ -287,7 +306,7 @@
                 const result = await response.json();
 
                 if (!result.success) throw new Error(result.message);
-                
+
 
                 renderMenu(result.data);
 
