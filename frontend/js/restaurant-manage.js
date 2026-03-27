@@ -430,6 +430,13 @@ async function deleteDish(dishId) {
 
 // GESTIONE RICERCA CATALOGO
 const btnSearchCatalog = document.getElementById('btn-search-catalog');
+const categorySelect = document.getElementById('catalog-category-filter');
+if (categorySelect) {
+    categorySelect.addEventListener('change', () => {
+        const query = document.getElementById('catalog-search-input').value;
+        loadCatalogList(query);
+    });
+}
 if (btnSearchCatalog) {
     btnSearchCatalog.addEventListener('click', async () => {
         const query = document.getElementById('catalog-search-input').value;
@@ -516,6 +523,8 @@ async function loadCatalogList(nameQuery = '') {
         const params = new URLSearchParams();
 
         if (nameQuery) params.append('name', nameQuery);
+        const category = document.getElementById('catalog-category-filter')?.value;
+        if (category) params.append('category', category);
 
         // solo catalogo
         params.append('source', 'catalog');
@@ -527,6 +536,20 @@ async function loadCatalogList(nameQuery = '') {
         const json = await res.json();
 
         resultsContainer.innerHTML = '';
+
+        // Popola categorie
+        const select = document.getElementById('catalog-category-filter');
+
+        if (select && select.options.length === 1) {
+            const categories = [...new Set(json.data.map(d => d.category).filter(Boolean))];
+
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                select.appendChild(option);
+            });
+        }
 
         if (!json.success || !json.data || json.data.length === 0) {
             resultsContainer.innerHTML = '<p class="text-center text-muted p-3">Nessun piatto trovato.</p>';
