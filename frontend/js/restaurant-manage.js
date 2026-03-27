@@ -429,7 +429,7 @@ async function deleteDish(dishId) {
 }
 
 // GESTIONE RICERCA CATALOGO
-const btnSearchCatalog = document.getElementById('btn-search-catalog');
+//search by category
 const categorySelect = document.getElementById('catalog-category-filter');
 if (categorySelect) {
     categorySelect.addEventListener('change', () => {
@@ -437,9 +437,8 @@ if (categorySelect) {
         loadCatalogList(query);
     });
 }
-
+// search by name
 const searchInput = document.getElementById('catalog-search-input');
-
 if (searchInput) {
     const debouncedSearch = debounce(() => {
         const query = searchInput.value;
@@ -448,42 +447,7 @@ if (searchInput) {
 
     searchInput.addEventListener('input', debouncedSearch);
 }
-
-if (btnSearchCatalog) {
-    btnSearchCatalog.addEventListener('click', async () => {
-        const query = document.getElementById('catalog-search-input').value;
-        const resultsContainer = document.getElementById('catalog-results');
-
-        resultsContainer.innerHTML = '<div class="spinner-border spinner-border-sm text-primary"></div> Caricamento...';
-
-        try {
-            // Chiama la rotta catalog esistente
-            const params = new URLSearchParams();
-            if (query) params.append('name', query);
-
-            params.append('source', 'catalog');
-
-            const res = await fetch(`/api/lv/dishes?${params.toString()}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const json = await res.json();
-
-            resultsContainer.innerHTML = '';
-
-            if (!json.data || json.data.length === 0) {
-                resultsContainer.innerHTML = '<p class="text-center">Nessun risultato.</p>';
-                return;
-            }
-
-            json.data.forEach(dish => {
-                const dishRow = renderDishRow(dish, 'Importa', (d) => importDish(dish._id));
-                resultsContainer.appendChild(dishRow);
-            });
-        } catch (err) {
-            resultsContainer.innerHTML = '<p class="text-danger">Errore ricerca.</p>';
-        }
-    });
-}
+//search by ingredient
 const ingredientInput = document.getElementById('catalog-ingredient-filter');
 if (ingredientInput) {
     ingredientInput.addEventListener('input', () => {
