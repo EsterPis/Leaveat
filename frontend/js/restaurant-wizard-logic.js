@@ -21,40 +21,38 @@ export async function initRestaurantWizard(containerId, scenarioB = false) {
     if (isScenarioB) {
         setupScenarioB(container);
     }
-    
+
     // Avvia la logica dei tab
     setupMenuTabsHandlers();
     // Carica le categorie per il menu a tendina
     await loadCategories();
-    
-    updateSummaryUI();
+    // trigger iniziale ricerca
+    document.getElementById('catalog-search-name')?.dispatchEvent(new Event('input'));
 
-    const searchBtn = document.getElementById('btn-search-catalog');
-    searchBtn.click();
+    updateSummaryUI();
 }
 
-// --- NUOVA FUNZIONE: Caricamento Categorie ---
 async function loadCategories() {
     const select = document.getElementById('custom-dish-category');
-    if (!select) return;
+    const catalogSelect = document.getElementById('catalog-search-category');
+    if (!select && !catalogSelect) return;
 
     try {
-        // Chiama la rotta backend (assicurati che esista in categories.js o dishes.js)
-        const response = await fetch('/api/lv/categories'); // O l'endpoint corretto per le categorie
-        // Se non hai un endpoint specifico, usa categories.js importato come array statico se preferisci, 
-        // ma hai chiesto "chiamando la rotta".
-        
-        // Se l'endpoint non esiste ancora nel backend, metti qui un array fallback:
-        // const categories = ['Pizza', 'Pasta', 'Dessert', ...]; 
-        
+        const response = await fetch('/api/lv/categories');
+
         if (response.ok) {
             const json = await response.json();
-            // Assumiamo che json.data sia un array di stringhe o oggetti
-            // Se categories.js esporta un array semplice nel backend, il json sarà tipo ["Beef", "Chicken"...]
-            const categories = json.data || json; 
-            
-            select.innerHTML = '<option value="">Seleziona una categoria...</option>' + 
-                categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            const categories = json.data || json;
+
+            if (select) {
+                select.innerHTML = '<option value="">Seleziona una categoria...</option>' +
+                    categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            }
+
+            if (catalogSelect) {
+                catalogSelect.innerHTML = '<option value="">Tutte le categorie</option>' +
+                    categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            }
         } else {
             select.innerHTML = '<option value="">Errore caricamento</option>';
         }
@@ -72,11 +70,11 @@ function setupScenarioB(container) {
     saveBtn.innerHTML = `<button id="btn-save-new-res" class="btn btn-success btn-lg">Crea Ristorante</button>`;
     container.appendChild(saveBtn);
     document.getElementById('btn-save-new-res').onclick = handleDirectCreation;
-    
+
     // ... codice modale clonazione (rimane uguale a prima) ...
-     const modalElement = document.getElementById('cloneMenuModal');
+    const modalElement = document.getElementById('cloneMenuModal');
     if (!modalElement) return;
-    
+
     const modal = new bootstrap.Modal(modalElement);
     const select = document.getElementById('select-source-res');
     const previewList = document.getElementById('preview-list');
@@ -88,22 +86,22 @@ function setupScenarioB(container) {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const json = await res.json();
-            select.innerHTML = '<option value="">Scegli...</option>' + 
+            select.innerHTML = '<option value="">Scegli...</option>' +
                 json.data.map(r => `<option value="${r._id}">${r.displayName}</option>`).join('');
             modal.show();
-        } catch(e) { console.error(e); }
+        } catch (e) { console.error(e); }
     };
 
     select.onchange = async () => {
         const resId = select.value;
         if (!resId) return;
-        const res = await fetch(`/api/lv/restaurants/${resId}`, { headers: { 'Authorization': `Bearer ${token}` }});
+        const res = await fetch(`/api/lv/restaurants/${resId}`, { headers: { 'Authorization': `Bearer ${token}` } });
         const json = await res.json();
         const dishes = json.data.menuId?.dishIds || [];
-        
+
         previewList.innerHTML = dishes.map(d => `<li class="list-group-item">${d.name} (€${d.price})</li>`).join('');
         confirmBtn.disabled = false;
-        
+
         confirmBtn.onclick = () => {
             const cloned = dishes.map(({ _id, ...rest }) => ({ ...rest }));
             currentDishes = [...currentDishes, ...cloned];
@@ -115,96 +113,110 @@ function setupScenarioB(container) {
 
 function setupMenuTabsHandlers() {
     // 1. RICERCA CATALOGO
-    const searchBtn = document.getElementById('btn-search-catalog');
-    const searchInput = document.getElementById('catalog-search-input');
+    const nameInput = document.getElementById('catalog-search-name');
+    const categorySelect = document.getElementById('catalog-search-category');
+    const ingredientsInput = document.getElementById('catalog-search-ingredients');
     const resultsContainer = document.getElementById('catalog-results');
 
-    if (searchBtn) {
-        searchBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const query = searchInput.value;
-            resultsContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
-            
-            try {
-                const url = query ? `/api/lv/dishes/catalog?name=${query}` : `/api/lv/dishes/catalog`;
-                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` }});
-                const json = await res.json();
-                
-                resultsContainer.innerHTML = '';
-                if(!json.data || json.data.length === 0) {
-                    resultsContainer.innerHTML = '<p class="text-muted text-center p-3">Nessun risultato</p>';
-                    return;
-                }
+    async function performSearch() {
+        const name = nameInput.value.trim();
+        const category = categorySelect.value;
+        const ingredients = ingredientsInput.value.trim();
 
-                json.data.forEach(dish => {
-                    // Usa renderDishRow per visualizzare le righe come richiesto
-                    const row = renderDishRow(dish, 'Aggiungi', (d) => {
-                        const price = prompt(`Prezzo di vendita per "${d.name}"?`, d.price || 0);
-                        if(price && !isNaN(parseFloat(price))) {
-                            const newDish = { ...d, price: parseFloat(price) };
-                            delete newDish._id; // Rimuovi ID catalogo per renderlo un nuovo inserimento
-                            currentDishes.push(newDish);
-                            updateSummaryUI();
-                            // Feedback visivo (opzionale) o alert
-                        }
-                    });
-                    resultsContainer.appendChild(row);
-                });
-            } catch(err) {
-                console.error(err);
-                resultsContainer.innerHTML = '<p class="text-danger text-center p-3">Errore ricerca</p>';
-            }
-        });
-    }
+        resultsContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
 
-    // 2. AGGIUNTA PIATTO CUSTOM
-    const addCustomBtn = document.getElementById('btn-add-custom-dish');
-    if (addCustomBtn) {
-        addCustomBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('custom-dish-name').value;
-            const price = parseFloat(document.getElementById('custom-dish-price').value);
-            const category = document.getElementById('custom-dish-category').value; // Ora prende dalla select
-            const desc = document.getElementById('custom-dish-desc').value;
+        try {
+            let url = `/api/lv/dishes?source=catalog`;
 
-            if (!name || isNaN(price) || !category) {
-                alert("Compila tutti i campi obbligatori (Nome, Prezzo, Categoria).");
+            if (name) url += `&name=${name}`;
+            if (category) url += `&category=${category}`;
+            if (ingredients) url += `&ingredient=${ingredients}`;
+
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const json = await res.json();
+
+            resultsContainer.innerHTML = '';
+
+            if (!json.data || json.data.length === 0) {
+                resultsContainer.innerHTML = '<p class="text-muted text-center p-3">Nessun risultato</p>';
                 return;
             }
 
-            // --- FIX MENU VUOTO ---
-            // Il backend Dish.js richiede 'ingredients' come array.
-            // Trasformiamo la descrizione in array separando per virgola.
-            const ingredientsArray = desc 
-                ? desc.split(',').map(s => s.trim()).filter(s => s.length > 0) 
-                : []; 
-
-            currentDishes.push({
-                name, 
-                price, 
-                category, 
-                description: desc, 
-                ingredients: ingredientsArray, // IMPORTANTE: Ora inviamo un array
-                source: 'restaurant'
+            json.data.forEach(dish => {
+                const row = renderDishRow(dish, 'Aggiungi', (d) => {
+                    const price = prompt(`Prezzo di vendita per "${d.name}"?`, d.price || 0);
+                    if (price && !isNaN(parseFloat(price))) {
+                        const newDish = { ...d, price: parseFloat(price) };
+                        delete newDish._id;
+                        currentDishes.push(newDish);
+                        updateSummaryUI();
+                    }
+                });
+                resultsContainer.appendChild(row);
             });
-            
-            // Reset form
-            document.getElementById('custom-dish-name').value = '';
-            document.getElementById('custom-dish-price').value = '';
-            document.getElementById('custom-dish-desc').value = '';
-            updateSummaryUI();
-            
-            // Passa al tab riepilogo per mostrare l'aggiunta
-            const triggerEl = document.querySelector('#menuTabs button[data-bs-target="#summary-tab"]');
-            if(triggerEl) bootstrap.Tab.getInstance(triggerEl)?.show() || new bootstrap.Tab(triggerEl).show();
-        });
+
+        } catch (err) {
+            console.error(err);
+            resultsContainer.innerHTML = '<p class="text-danger text-center p-3">Errore ricerca</p>';
+        }
     }
+
+    [nameInput, categorySelect, ingredientsInput].forEach(el => {
+        if (el) {
+            el.addEventListener('input', performSearch);
+            el.addEventListener('change', performSearch);
+        }
+    });
+
+}
+
+// 2. AGGIUNTA PIATTO CUSTOM
+const addCustomBtn = document.getElementById('btn-add-custom-dish');
+if (addCustomBtn) {
+    addCustomBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('custom-dish-name').value;
+        const price = parseFloat(document.getElementById('custom-dish-price').value);
+        const category = document.getElementById('custom-dish-category').value; // Ora prende dalla select
+        const desc = document.getElementById('custom-dish-desc').value;
+
+        if (!name || isNaN(price) || !category) {
+            alert("Compila tutti i campi obbligatori (Nome, Prezzo, Categoria).");
+            return;
+        }
+
+        // --- FIX MENU VUOTO ---
+        // Il backend Dish.js richiede 'ingredients' come array.
+        // Trasformiamo la descrizione in array separando per virgola.
+        const ingredientsArray = desc
+            ? desc.split(',').map(s => s.trim()).filter(s => s.length > 0)
+            : [];
+
+        currentDishes.push({
+            name,
+            price,
+            category,
+            description: desc,
+            ingredients: ingredientsArray, // IMPORTANTE: Ora inviamo un array
+            source: 'restaurant'
+        });
+
+        // Reset form
+        document.getElementById('custom-dish-name').value = '';
+        document.getElementById('custom-dish-price').value = '';
+        document.getElementById('custom-dish-desc').value = '';
+        updateSummaryUI();
+
+        // Passa al tab riepilogo per mostrare l'aggiunta
+        const triggerEl = document.querySelector('#menuTabs button[data-bs-target="#summary-tab"]');
+        if (triggerEl) bootstrap.Tab.getInstance(triggerEl)?.show() || new bootstrap.Tab(triggerEl).show();
+    });
 }
 
 function updateSummaryUI() {
     const badge = document.getElementById('dish-count');
     if (badge) badge.textContent = currentDishes.length;
-    
+
     const summaryList = document.getElementById('summary-list');
     if (!summaryList) return;
 
@@ -217,15 +229,15 @@ function updateSummaryUI() {
     currentDishes.forEach((dish, index) => {
         // Riutilizziamo renderDishRow anche per il riepilogo, ma con tasto Rimuovi
         const row = renderDishRow(dish, 'Rimuovi', () => {
-             currentDishes.splice(index, 1);
-             updateSummaryUI();
+            currentDishes.splice(index, 1);
+            updateSummaryUI();
         }, false); // false = non disabilitato
-        
+
         // Cambio stile bottone per la rimozione
         const btn = row.querySelector('.btn');
         btn.className = 'btn btn-sm btn-danger';
         btn.innerHTML = '<i class="bi bi-trash"></i>';
-        
+
         summaryList.appendChild(row);
     });
 
@@ -307,7 +319,7 @@ async function handleDirectCreation() {
                 body: JSON.stringify(dishPayload)
             });
         }
-        
+
         alert("Ristorante creato con successo!");
         window.location.href = 'restaurateur-dashboard.html';
     } catch (err) {

@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^[0-9]{10}$/;
 const vatRegex = /^[0-9]{11}$/; // Corretta regex P.IVA (11 numeri)
-const ibanRegex = /^IT[0-9]{2}[a-zA-Z][0-9a-zA-Z]{22}$/; // Regex IBAN IT
+const ibanRegex = /^IT\d{2}[A-Z]\d{10}[A-Z0-9]{12}$/;
 const zipRegex = /^\d{5}$/;
 
 function isEmpty(value) {

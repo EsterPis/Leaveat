@@ -6,10 +6,10 @@ export function renderDishRow(dish, buttonText, onClick, isAdded = false) {
     div.className = "list-group-item d-flex align-items-center p-2 mb-2 shadow-sm border rounded justify-content-between bg-white";
 
     const imgUrl = dish.imageUrl || dish.image || 'https://via.placeholder.com/80?text=Piatto';
-    
+
     // Gestione ingredienti: se è array unisci, se stringa usa quella, se null metti trattino
-    const ingredientsText = Array.isArray(dish.ingredients) 
-        ? dish.ingredients.join(', ') 
+    const ingredientsText = Array.isArray(dish.ingredients)
+        ? dish.ingredients.join(', ')
         : (dish.ingredients || '-');
 
     div.innerHTML = `
@@ -38,7 +38,7 @@ export function renderDishRow(dish, buttonText, onClick, isAdded = false) {
             onClick(dish);
         });
     }
-    
+
     return div;
 }
 
@@ -139,9 +139,18 @@ export function renderMenuSection(showCloneButton = false) {
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="catalog-tab">
-                        <div class="input-group mb-3">
-                            <input type="text" id="catalog-search-input" class="form-control" placeholder="Cerca piatto (es. Margherita)...">
-                            <button class="btn btn-primary" id="btn-search-catalog">Cerca</button>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <input type="text" id="catalog-search-name" class="form-control" placeholder="Nome piatto...">
+                            </div>
+                            <div class="col-md-4">
+                                <select id="catalog-search-category" class="form-select">
+                                    <option value="">Tutte le categorie</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" id="catalog-search-ingredients" class="form-control" placeholder="Ingredienti (es. pollo, riso)">
+                            </div>
                         </div>
                         <div id="catalog-results" class="list-group" style="max-height: 400px; overflow-y: auto;"></div>
                     </div>
