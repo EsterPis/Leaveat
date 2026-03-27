@@ -437,6 +437,18 @@ if (categorySelect) {
         loadCatalogList(query);
     });
 }
+
+const searchInput = document.getElementById('catalog-search-input');
+
+if (searchInput) {
+    const debouncedSearch = debounce(() => {
+        const query = searchInput.value;
+        loadCatalogList(query);
+    }, 300);
+
+    searchInput.addEventListener('input', debouncedSearch);
+}
+
 if (btnSearchCatalog) {
     btnSearchCatalog.addEventListener('click', async () => {
         const query = document.getElementById('catalog-search-input').value;
@@ -514,6 +526,14 @@ async function importDish(catalogDishId) {
     } catch (err) {
         alert('Errore di comunicazione');
     }
+}
+
+function debounce(fn, delay = 300) {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), delay);
+    };
 }
 
 /**
