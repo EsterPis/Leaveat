@@ -124,7 +124,6 @@
                 const dishes = restaurant.menuId?.dishIds || [];
                 currentDishIds = dishes.map(d => d._id);
                 console.log("DISH IDS:", currentDishIds);
-                currentDishes = dishes;
 
                 await loadInitialDishes();
             } catch (err) {
@@ -307,7 +306,7 @@
 
                 if (!result.success) throw new Error(result.message);
 
-
+                currentDishes = result.data;
                 renderMenu(result.data);
 
             } catch (err) {
@@ -324,34 +323,6 @@
                 ingredient: document.getElementById('filterIngredients').value.toLowerCase()
             };
         }
-
-
-        function filterDishes(dishes, filters) {
-            return dishes.filter(d => {
-
-                if (filters.name && !d.name.toLowerCase().includes(filters.name)) {
-                    return false;
-                }
-
-                if (filters.category && d.category !== filters.category) {
-                    return false;
-                }
-
-                if (!isNaN(filters.maxPrice) && d.price > filters.maxPrice) {
-                    return false;
-                }
-
-                if (filters.ingredient) {
-                    const match = d.ingredients.some(i =>
-                        i.toLowerCase().includes(filters.ingredient)
-                    );
-                    if (!match) return false;
-                }
-
-                return true;
-            });
-        }
-
 
         // =============================
         // CART

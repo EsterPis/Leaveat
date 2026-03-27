@@ -28,12 +28,13 @@ async function verifyOwnership(userId, restaurantId) {
 /* B → PUBLIC CATALOG ROUTES */
 router.get('/', async (req, res) => {
   try {
-    const { name, category, maxPrice, ingredient, dishIds } = req.query;
+    const { name, category, maxPrice, ingredient, dishIds, source } = req.query;
 
     let filter = {};
 
-    console.log("REQ QUERY:", req.query);
-    console.log("DISH IDS RAW:", dishIds);
+    if (source === 'catalog') {
+      filter.source = 'catalog';
+    }
 
     // filtro per ID piatti del menu
     if (dishIds) {

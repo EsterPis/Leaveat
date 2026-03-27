@@ -304,7 +304,6 @@ if (btnEditInfo) {
 }
 
 //Aggiungi Piatto (pulsante grande in Menù Tab)
-// Questo pulsante ora apre il Modale (il codice del modale deve essere nell'HTML)
 const btnAddDish = document.getElementById('btn-add-dish');
 if (btnAddDish) {
     btnAddDish.addEventListener('click', () => {
@@ -440,7 +439,12 @@ if (btnSearchCatalog) {
 
         try {
             // Chiama la rotta catalog esistente
-            const res = await fetch(`/api/lv/dishes/catalog?name=${query}`, {
+            const params = new URLSearchParams();
+            if (query) params.append('name', query);
+
+            params.append('source', 'catalog');
+
+            const res = await fetch(`/api/lv/dishes?${params.toString()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const json = await res.json();
@@ -509,10 +513,14 @@ async function loadCatalogList(nameQuery = '') {
     resultsContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-primary"></div> Caricamento...</div>';
 
     try {
-        const url = nameQuery
-            ? `/api/lv/dishes/catalog?name=${encodeURIComponent(nameQuery)}`
-            : `/api/lv/dishes/catalog`;
+        const params = new URLSearchParams();
 
+        if (nameQuery) params.append('name', nameQuery);
+
+        // solo catalogo
+        params.append('source', 'catalog');
+
+        const url = `/api/lv/dishes?${params.toString()}`;
         const res = await fetch(url, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
