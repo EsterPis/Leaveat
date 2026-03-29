@@ -11,6 +11,7 @@ const DishSchema = new mongoose.Schema({
   ingredients: [{ type: String, required: true }],
   measures: [{ type: String }],
   price: { type: Number, default: 0, required: true },
+  //prepTime: { type: Number, default: 15, min: 1 }, // in minutes
   restaurantId: { type: Schema.Types.ObjectId, ref: 'Restaurant' },
   source: { type: String, enum: ['catalog', 'restaurant'], default: 'catalog' }
 }, { timestamps: true });
