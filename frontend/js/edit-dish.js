@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('dish-price').value = dish.price.toFixed(2);
         document.getElementById('dish-category').value = dish.category;
         document.getElementById('dish-description').value = dish.description || '';
+        document.getElementById('dish-preptime').value = dish.prepTime || 15;
 
         // Converti l'array di ingredienti in una stringa separata da virgole
         document.getElementById('dish-ingredients').value = dish.ingredients ? dish.ingredients.join(', ') : '';
@@ -75,7 +76,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             price: parseFloat(document.getElementById('dish-price').value),
             category: document.getElementById('dish-category').value,
             description: document.getElementById('dish-description').value,
-            ingredients: ingredients
+            ingredients: ingredients,
+            prepTime: parseInt(document.getElementById('dish-preptime').value) || 15
         };
 
         try {

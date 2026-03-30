@@ -234,6 +234,30 @@ router.post('/import', authMiddleware, async (req, res) => {
   }
 });
 
+router.get('/:id', async (req, res) => {
+  try {
+    const dish = await Dish.findById(req.params.id);
+
+    if (!dish) {
+      return res.status(404).json({
+        success: false,
+        message: 'Piatto non trovato'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: dish
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Errore nel recupero del piatto'
+    });
+  }
+});
+
 
 // PUT /api/lv/dishes/:id
 // Updates a restaurant-owned dish
