@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ingredientsStr = document.getElementById('dish-ingredients').value;
         const ingredients = ingredientsStr.split(',').map(i => i.trim()).filter(i => i.length > 0);
 
+        const prepTimeInput = document.getElementById('dish-preptime').value;
         // Raccogli i dati aggiornati dal form
         const updatedData = {
             name: document.getElementById('dish-name').value,
@@ -77,8 +78,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             category: document.getElementById('dish-category').value,
             description: document.getElementById('dish-description').value,
             ingredients: ingredients,
-            prepTime: parseInt(document.getElementById('dish-preptime').value) || 15
+            prepTime: prepTimeInput ? parseInt(prepTimeInput) : 15
         };
+        console.log(updatedData);
 
         try {
             const response = await fetch(`/api/lv/dishes/${dishId}`, {

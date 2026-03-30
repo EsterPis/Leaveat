@@ -341,13 +341,16 @@ if (addDishForm) {
             return;
         }
 
+        const prepTimeInput = document.getElementById('dish-preptime').value;
+
         const payload = {
             name: name,
             category: category,
             price: parseFloat(price),
             ingredients: ingredients,
             description: description,
-            restaurantId: restaurantId // Variabile globale definita in cima al file
+            restaurantId: restaurantId,
+            prepTime: prepTimeInput ? parseInt(prepTimeInput) : 15 
         };
 
         try {
