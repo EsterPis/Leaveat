@@ -164,7 +164,7 @@ router.post('/import', authMiddleware, async (req, res) => {
       throw new Error('Access denied');
     }
 
-    const { catalogDishId, price, restaurantId } = req.body;
+    const { catalogDishId, price, restaurantId, prepTime } = req.body;
 
     if (!restaurantId) {
       throw new Error('restaurantId is required');
@@ -191,6 +191,7 @@ router.post('/import', authMiddleware, async (req, res) => {
       measures: originalDish.measures,
       externalId: originalDish.externalId,
       price: Number(price),
+      prepTime: prepTime || 15,
       restaurantId,
       source: 'restaurant'
     });

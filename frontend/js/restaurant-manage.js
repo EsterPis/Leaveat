@@ -350,7 +350,7 @@ if (addDishForm) {
             ingredients: ingredients,
             description: description,
             restaurantId: restaurantId,
-            prepTime: prepTimeInput ? parseInt(prepTimeInput) : 15 
+            prepTime: prepTimeInput ? parseInt(prepTimeInput) : 15
         };
 
         try {
@@ -465,39 +465,60 @@ if (ingredientInput) {
 }
 
 async function importDish(catalogDishId) {
-    const price = prompt("Inserisci il prezzo di vendita per questo piatto (es. 12.50):");
-    if (!price) return;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentRestaurantId = urlParams.get('id');
+    const modal = new bootstrap.Modal(document.getElementById('importDishModal'));
+    const priceInput = document.getElementById('import-price');
+    const prepTimeInput = document.getElementById('import-preptime');
+    const confirmBtn = document.getElementById('confirm-import-btn');
 
-    console.log("DEBUG FRONTEND - Invio importazione per ristorante:", currentRestaurantId);
+    // reset campi
+    priceInput.value = '';
+    prepTimeInput.value = '';
 
-    try {
-        const response = await fetch('/api/lv/dishes/import', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                catalogDishId: catalogDishId,
-                restaurantId: currentRestaurantId, // Variabile globale dalla pagina
-                price: parseFloat(price)
-            })
-        });
+    modal.show();
 
-        const json = await response.json();
-        if (json.success) {
-            alert('Piatto importato!');
-            loadRestaurantDetails(); // Ricarica la tabella
-            // Opzionale: chiudi modale
-        } else {
-            alert('Errore: ' + json.message);
+    confirmBtn.onclick = async () => {
+
+        const price = priceInput.value;
+        const prepTime = prepTimeInput.value;
+
+        if (!price) {
+            alert("Inserisci il prezzo");
+            return;
         }
-    } catch (err) {
-        alert('Errore di comunicazione');
-    }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentRestaurantId = urlParams.get('id');
+
+        try {
+            const response = await fetch('/api/lv/dishes/import', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    catalogDishId: catalogDishId,
+                    restaurantId: currentRestaurantId,
+                    price: parseFloat(price),
+                    prepTime: prepTime ? parseInt(prepTime) : 15
+                })
+            });
+
+            const json = await response.json();
+
+            if (json.success) {
+                modal.hide();
+                alert('Piatto importato!');
+                loadRestaurantDetails();
+            } else {
+                alert('Errore: ' + json.message);
+            }
+
+        } catch (err) {
+            alert('Errore di comunicazione');
+        }
+    };
 }
 
 function debounce(fn, delay = 300) {
