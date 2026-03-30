@@ -155,8 +155,13 @@ async function loadRestaurantDetails() {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${dish.name}</td>
-                    <td><span class="badge bg-light text-dark border">${dish.category}</span></td>
                     <td>€ ${dish.price.toFixed(2)}</td>
+                    <td>
+                        <span class="badge bg-info text-dark">
+                            ${dish.prepTime || 15} min
+                        </span>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">${dish.category}</span></td>
                     <td>
                         <button class="btn btn-sm btn-warning text-white btn-edit-dish me-2" data-dish-id="${dish._id}" title="Modifica Piatto">
                             <i class="fas fa-pencil-alt"></i>
@@ -171,7 +176,7 @@ async function loadRestaurantDetails() {
             // Dopo aver popolato la tabella, leghiamo gli eventi dinamici
             bindMenuEvents();
         } else {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center">Nessun piatto nel menù.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nessun piatto nel menù.</td></tr>';
         }
 
     } catch (err) {
