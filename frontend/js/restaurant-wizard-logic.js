@@ -18,6 +18,50 @@ export async function initRestaurantWizard(containerId, scenarioB = false) {
         </div>
     `;
 
+    const addCustomBtn = document.getElementById('btn-add-custom-dish');
+    if (addCustomBtn) {
+        addCustomBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('custom-dish-name').value;
+            const price = parseFloat(document.getElementById('custom-dish-price').value);
+            const prepTimeInput = document.getElementById('custom-dish-preptime').value;
+            const category = document.getElementById('custom-dish-category').value; // Ora prende dalla select
+            const desc = document.getElementById('custom-dish-desc').value;
+
+            if (!name || isNaN(price) || !category) {
+                alert("Compila tutti i campi obbligatori (Nome, Prezzo, Categoria).");
+                return;
+            }
+
+            // --- FIX MENU VUOTO ---
+            // Il backend Dish.js richiede 'ingredients' come array.
+            // Trasformiamo la descrizione in array separando per virgola.
+            const ingredientsArray = desc
+                ? desc.split(',').map(s => s.trim()).filter(s => s.length > 0)
+                : [];
+
+            currentDishes.push({
+                name,
+                price,
+                category,
+                description: desc,
+                ingredients: ingredientsArray,
+                source: 'restaurant',
+                prepTime: prepTimeInput ? parseInt(prepTimeInput) : 15
+            });
+
+            // Reset form
+            document.getElementById('custom-dish-name').value = '';
+            document.getElementById('custom-dish-price').value = '';
+            document.getElementById('custom-dish-desc').value = '';
+            updateSummaryUI();
+
+            // Passa al tab riepilogo per mostrare l'aggiunta
+            const triggerEl = document.querySelector('#menuTabs button[data-bs-target="#summary-tab"]');
+            if (triggerEl) bootstrap.Tab.getInstance(triggerEl)?.show() || new bootstrap.Tab(triggerEl).show();
+        });
+    }
+
     if (isScenarioB) {
         setupScenarioB(container);
     }
@@ -144,14 +188,26 @@ function setupMenuTabsHandlers() {
 
             json.data.forEach(dish => {
                 const row = renderDishRow(dish, 'Aggiungi', (d) => {
+
                     const price = prompt(`Prezzo di vendita per "${d.name}"?`, d.price || 0);
-                    if (price && !isNaN(parseFloat(price))) {
-                        const newDish = { ...d, price: parseFloat(price) };
-                        delete newDish._id;
-                        currentDishes.push(newDish);
-                        updateSummaryUI();
-                    }
+                    if (!price || isNaN(parseFloat(price))) return;
+
+                    const prepTimeInput = prompt(`Tempo di preparazione per "${d.name}" (minuti)?`, 15);
+
+                    const newDish = {
+                        ...d,
+                        price: parseFloat(price),
+                        prepTime: prepTimeInput && !isNaN(parseInt(prepTimeInput))
+                            ? parseInt(prepTimeInput)
+                            : 15
+                    };
+
+                    delete newDish._id;
+                    currentDishes.push(newDish);
+                    updateSummaryUI();
+
                 });
+
                 resultsContainer.appendChild(row);
             });
 
@@ -168,49 +224,6 @@ function setupMenuTabsHandlers() {
         }
     });
 
-}
-
-// 2. AGGIUNTA PIATTO CUSTOM
-const addCustomBtn = document.getElementById('btn-add-custom-dish');
-if (addCustomBtn) {
-    addCustomBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const name = document.getElementById('custom-dish-name').value;
-        const price = parseFloat(document.getElementById('custom-dish-price').value);
-        const category = document.getElementById('custom-dish-category').value; // Ora prende dalla select
-        const desc = document.getElementById('custom-dish-desc').value;
-
-        if (!name || isNaN(price) || !category) {
-            alert("Compila tutti i campi obbligatori (Nome, Prezzo, Categoria).");
-            return;
-        }
-
-        // --- FIX MENU VUOTO ---
-        // Il backend Dish.js richiede 'ingredients' come array.
-        // Trasformiamo la descrizione in array separando per virgola.
-        const ingredientsArray = desc
-            ? desc.split(',').map(s => s.trim()).filter(s => s.length > 0)
-            : [];
-
-        currentDishes.push({
-            name,
-            price,
-            category,
-            description: desc,
-            ingredients: ingredientsArray, // IMPORTANTE: Ora inviamo un array
-            source: 'restaurant'
-        });
-
-        // Reset form
-        document.getElementById('custom-dish-name').value = '';
-        document.getElementById('custom-dish-price').value = '';
-        document.getElementById('custom-dish-desc').value = '';
-        updateSummaryUI();
-
-        // Passa al tab riepilogo per mostrare l'aggiunta
-        const triggerEl = document.querySelector('#menuTabs button[data-bs-target="#summary-tab"]');
-        if (triggerEl) bootstrap.Tab.getInstance(triggerEl)?.show() || new bootstrap.Tab(triggerEl).show();
-    });
 }
 
 function updateSummaryUI() {

@@ -4,8 +4,7 @@ export function renderDishRow(dish, buttonText, onClick, isAdded = false) {
     const div = document.createElement('div');
     // Stile coerente per righe catalogo e riepilogo
     div.className = "list-group-item d-flex align-items-center p-2 mb-2 shadow-sm border rounded justify-content-between bg-white";
-
-    const imgUrl = dish.imageUrl || dish.image || 'https://via.placeholder.com/80?text=Piatto';
+    const imgUrl = dish.imageUrl || dish.image || '../assets/logo-default.jpg';
 
     // Gestione ingredienti: se è array unisci, se stringa usa quella, se null metti trattino
     const ingredientsText = Array.isArray(dish.ingredients)
@@ -164,6 +163,10 @@ export function renderMenuSection(showCloneButton = false) {
                             <div class="col-md-4">
                                 <label class="small fw-bold">Prezzo (€) <span class="text-danger">*</span></label>
                                 <input type="number" id="custom-dish-price" class="form-control" placeholder="0.00" step="0.50">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Tempo di preparazione (minuti)</label>
+                                <input type="number" id="custom-dish-preptime" class="form-control" placeholder="Es. 15" min="1">
                             </div>
                             <div class="col-md-12">
                                 <label class="small fw-bold">Categoria <span class="text-danger">*</span></label>
