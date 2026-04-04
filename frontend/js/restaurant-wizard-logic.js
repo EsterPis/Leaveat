@@ -156,61 +156,24 @@ function setupScenarioB(container) {
 }
 
 function setupMenuTabsHandlers() {
-    // 1. RICERCA CATALOGO
+
     const nameInput = document.getElementById('catalog-search-name');
     const categorySelect = document.getElementById('catalog-search-category');
     const ingredientsInput = document.getElementById('catalog-search-ingredients');
     const resultsContainer = document.getElementById('catalog-results');
 
     async function performSearch() {
-        const name = nameInput.value.trim();
-        const category = categorySelect.value;
-        const ingredients = ingredientsInput.value.trim();
+        const filters = {
+            name: nameInput.value.trim(),
+            category: categorySelect.value,
+            ingredients: ingredientsInput.value.trim()
+        };
 
-        resultsContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
+        showLoading(resultsContainer);
 
         try {
-            let url = `/api/lv/dishes?source=catalog`;
-
-            if (name) url += `&name=${name}`;
-            if (category) url += `&category=${category}`;
-            if (ingredients) url += `&ingredient=${ingredients}`;
-
-            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            const json = await res.json();
-
-            resultsContainer.innerHTML = '';
-
-            if (!json.data || json.data.length === 0) {
-                resultsContainer.innerHTML = '<p class="text-muted text-center p-3">Nessun risultato</p>';
-                return;
-            }
-
-            json.data.forEach(dish => {
-                const row = renderDishRow(dish, 'Aggiungi', (d) => {
-
-                    const price = prompt(`Prezzo di vendita per "${d.name}"?`, d.price || 0);
-                    if (!price || isNaN(parseFloat(price))) return;
-
-                    const prepTimeInput = prompt(`Tempo di preparazione per "${d.name}" (minuti)?`, 15);
-
-                    const newDish = {
-                        ...d,
-                        price: parseFloat(price),
-                        prepTime: prepTimeInput && !isNaN(parseInt(prepTimeInput))
-                            ? parseInt(prepTimeInput)
-                            : 15
-                    };
-
-                    delete newDish._id;
-                    currentDishes.push(newDish);
-                    updateSummaryUI();
-
-                });
-
-                resultsContainer.appendChild(row);
-            });
-
+            const dishes = await fetchCatalogDishes(filters);
+            renderCatalogResults(dishes, resultsContainer);
         } catch (err) {
             console.error(err);
             resultsContainer.innerHTML = '<p class="text-danger text-center p-3">Errore ricerca</p>';
@@ -218,12 +181,50 @@ function setupMenuTabsHandlers() {
     }
 
     [nameInput, categorySelect, ingredientsInput].forEach(el => {
-        if (el) {
-            el.addEventListener('input', performSearch);
-            el.addEventListener('change', performSearch);
-        }
+        el?.addEventListener('input', performSearch);
+        el?.addEventListener('change', performSearch);
     });
+}
 
+function renderModal(dish) {
+    const row = renderDishRow(dish, 'Aggiungi', (d) => {
+
+        const modal = new bootstrap.Modal(document.getElementById('wizardImportModal'));
+        const priceInput = document.getElementById('wizard-price');
+        const prepTimeInput = document.getElementById('wizard-preptime');
+        const confirmBtn = document.getElementById('wizard-confirm-btn');
+
+        // reset
+        priceInput.value = d.price || '';
+        prepTimeInput.value = '';
+
+        modal.show();
+
+        confirmBtn.onclick = () => {
+
+            const price = priceInput.value;
+            const prepTime = prepTimeInput.value;
+
+            if (!price || isNaN(parseFloat(price))) {
+                alert("Inserisci un prezzo valido");
+                return;
+            }
+
+            const newDish = {
+                ...d,
+                price: parseFloat(price),
+                prepTime: prepTime && !isNaN(parseInt(prepTime))
+                    ? parseInt(prepTime)
+                    : 15
+            };
+
+            delete newDish._id;
+            currentDishes.push(newDish);
+            updateSummaryUI();
+
+            modal.hide();
+        };
+    });
 }
 
 function updateSummaryUI() {
@@ -340,4 +341,91 @@ async function handleDirectCreation() {
         alert("Errore durante il salvataggio: " + err.message);
     }
 
+}
+
+/* UTILITY FUNCTIONS */
+async function fetchCatalogDishes({ name, category, ingredients }) {
+
+    let url = `/api/lv/dishes?source=catalog`;
+
+    if (name) url += `&name=${name}`;
+    if (category) url += `&category=${category}`;
+    if (ingredients) url += `&ingredient=${ingredients}`;
+
+    const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    const json = await res.json();
+    return json.data || [];
+}
+
+function renderCatalogResults(dishes, container) {
+
+    container.innerHTML = '';
+
+    if (dishes.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center p-3">Nessun risultato</p>';
+        return;
+    }
+
+    dishes.forEach(dish => {
+        const row = createDishRow(dish);
+        container.appendChild(row);
+    });
+}
+
+function createDishRow(dish) {
+
+    return renderDishRow(dish, 'Aggiungi', () => {
+        openImportModal(dish);
+    });
+}
+
+function openImportModal(dish) {
+
+    const modal = new bootstrap.Modal(document.getElementById('wizardImportModal'));
+    const priceInput = document.getElementById('wizard-price');
+    const prepTimeInput = document.getElementById('wizard-preptime');
+    const confirmBtn = document.getElementById('wizard-confirm-btn');
+
+    priceInput.value = dish.price || '';
+    prepTimeInput.value = '';
+
+    modal.show();
+
+    confirmBtn.onclick = () => {
+
+        const newDish = buildDishFromModal(dish, priceInput.value, prepTimeInput.value);
+
+        if (!newDish) return;
+
+        currentDishes.push(newDish);
+        updateSummaryUI();
+        modal.hide();
+    };
+}
+
+function showLoading(container) {
+    container.innerHTML = `
+        <div class="text-center p-3">
+            <div class="spinner-border spinner-border-sm text-primary"></div>
+        </div>
+    `;
+}
+
+function buildDishFromModal(dish, price, prepTime) {
+
+    if (!price || isNaN(parseFloat(price))) {
+        alert("Prezzo non valido");
+        return null;
+    }
+
+    return {
+        ...dish,
+        price: parseFloat(price),
+        prepTime: prepTime && !isNaN(parseInt(prepTime))
+            ? parseInt(prepTime)
+            : 15
+    };
 }
