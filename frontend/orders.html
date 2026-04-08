@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,114 +12,113 @@
 
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="/index.html">Leaveat</a>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="/index.html">Leaveat</a>
 
-    <div class="d-flex align-items-center gap-3">
-      <a href="/cart.html" class="btn btn-outline-light position-relative">
-        <i class="bi bi-cart3"></i>
-        <span id="cart-count"
-              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-          0
-        </span>
-      </a>
+      <div class="d-flex align-items-center gap-3">
+        <a href="/cart.html" class="btn btn-outline-light position-relative">
+          <i class="bi bi-cart3"></i>
+          <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            0
+          </span>
+        </a>
 
-      <div class="user-section"></div>
+        <div class="user-section"></div>
+      </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<main class="container py-4">
+  <main class="container py-4">
 
-  <h2 class="mb-4">I miei ordini</h2>
+    <h2 class="mb-4">I miei ordini</h2>
 
-  <div id="ordersContainer"></div>
+    <div id="ordersContainer"></div>
 
-</main>
+  </main>
 
-<script>
+  <script>
 
-// ================= CARRELLO BADGE =================
-function updateCartBadge() {
-  const badge = document.getElementById("cart-count");
-  const cart = JSON.parse(localStorage.getItem("cart")) || null;
+    // ================= CARRELLO BADGE =================
+    function updateCartBadge() {
+      const badge = document.getElementById("cart-count");
+      const cart = JSON.parse(localStorage.getItem("cart")) || null;
 
-  if (!badge) return;
+      if (!badge) return;
 
-  if (!cart || !cart.items.length) {
-    badge.textContent = 0;
-    return;
-  }
-
-  const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-  badge.textContent = totalItems;
-}
-
-// ================= CARICA ORDINI =================
-async function loadOrders() {
-
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role");
-
-  if (!token) {
-    alert("Devi effettuare il login.");
-    window.location.href = "/login.html";
-    return;
-  }
-
-  if (role !== "CUSTOMER") {
-    alert("Solo i clienti possono visualizzare gli ordini.");
-    return;
-  }
-
-  try {
-
-    const response = await fetch("/api/lv/orders/my-orders", {
-      headers: {
-        "Authorization": "Bearer " + token
+      if (!cart || !cart.items.length) {
+        badge.textContent = 0;
+        return;
       }
-    });
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message);
+      const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+      badge.textContent = totalItems;
     }
 
-    renderOrders(result.data);
+    // ================= CARICA ORDINI =================
+    async function loadOrders() {
 
-  } catch (err) {
-    console.error(err);
-    alert("Errore nel caricamento degli ordini.");
-  }
-}
+      const token = localStorage.getItem("token");
+      const role = localStorage.getItem("role");
 
-// ================= RENDER ORDINI =================
-function renderOrders(orders) {
+      if (!token) {
+        alert("Devi effettuare il login.");
+        window.location.href = "/login.html";
+        return;
+      }
 
-  const container = document.getElementById("ordersContainer");
-  container.innerHTML = "";
+      if (role !== "CUSTOMER") {
+        alert("Solo i clienti possono visualizzare gli ordini.");
+        return;
+      }
 
-  if (!orders.length) {
-    container.innerHTML = `
+      try {
+
+        const response = await fetch("/api/lv/orders/my-orders", {
+          headers: {
+            "Authorization": "Bearer " + token
+          }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message);
+        }
+
+        renderOrders(result.data);
+
+      } catch (err) {
+        console.error(err);
+        alert("Errore nel caricamento degli ordini.");
+      }
+    }
+
+    // ================= RENDER ORDINI =================
+    function renderOrders(orders) {
+
+      const container = document.getElementById("ordersContainer");
+      container.innerHTML = "";
+
+      if (!orders.length) {
+        container.innerHTML = `
       <div class="alert alert-info">
         Non hai ancora effettuato ordini.
       </div>
     `;
-    return;
-  }
+        return;
+      }
 
-  orders.forEach(order => {
+      orders.forEach(order => {
 
-    const card = document.createElement("div");
-    card.className = "card mb-4";
+        const card = document.createElement("div");
+        card.className = "card mb-4";
 
-    const itemsList = order.items.map(item =>
-      `<li>${item.quantity} × ${item.dishId.name}</li>`
-    ).join("");
+        const itemsList = order.items.map(item =>
+          `<li>${item.quantity} × ${item.dishId.name}</li>`
+        ).join("");
 
-    card.innerHTML = `
+        card.innerHTML = `
       <div class="card-body">
 
         <div class="d-flex justify-content-between">
@@ -127,7 +127,11 @@ function renderOrders(orders) {
         </div>
 
         <p class="text-muted">
+          Ristorante:
+          <a href="/restaurant.html?id=${order.restaurantId._id}"> ${order.restaurantId.displayName}</a>
+          <br>
           ${new Date(order.createdAt).toLocaleString()}
+          <br>Tempo stimato: ${order.estimatedWaitTime} min
         </p>
 
         <ul>
@@ -138,57 +142,57 @@ function renderOrders(orders) {
           Totale: € ${order.totalPrice.toFixed(2)}
         </h6>
 
-        ${
-          order.status === "ORDINATO"
+        ${order.status === "ORDINATO"
             ? `<button class="btn btn-sm btn-outline-danger mt-2"
                        onclick="cancelOrder('${order._id}')">
                  Annulla ordine
                </button>`
             : ""
-        }
+          }
 
       </div>
     `;
 
-    container.appendChild(card);
-  });
-}
-
-// ================= ANNULLAMENTO =================
-async function cancelOrder(orderId) {
-
-  const token = localStorage.getItem("token");
-
-  if (!confirm("Vuoi annullare l'ordine?")) return;
-
-  try {
-
-    const response = await fetch(`/api/lv/orders/${orderId}/cancel`, {
-      method: "PATCH",
-      headers: {
-        "Authorization": "Bearer " + token
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error("Errore annullamento");
+        container.appendChild(card);
+      });
     }
 
+    // ================= ANNULLAMENTO =================
+    async function cancelOrder(orderId) {
+
+      const token = localStorage.getItem("token");
+
+      if (!confirm("Vuoi annullare l'ordine?")) return;
+
+      try {
+
+        const response = await fetch(`/api/lv/orders/${orderId}/cancel`, {
+          method: "PATCH",
+          headers: {
+            "Authorization": "Bearer " + token
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Errore annullamento");
+        }
+
+        loadOrders();
+
+      } catch (err) {
+        console.error(err);
+        alert("Errore durante l'annullamento.");
+      }
+    }
+
+    // ================= INIT =================
+    updateCartBadge();
     loadOrders();
 
-  } catch (err) {
-    console.error(err);
-    alert("Errore durante l'annullamento.");
-  }
-}
+  </script>
 
-// ================= INIT =================
-updateCartBadge();
-loadOrders();
-
-</script>
-
-<script src="/js/session.js"></script>
+  <script src="/js/session.js"></script>
 
 </body>
+
 </html>
