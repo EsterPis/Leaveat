@@ -178,12 +178,12 @@
 
             const imageSrc = (r.imageUrl && r.imageUrl.trim() !== "")
                 ? r.imageUrl
-                : "/assets/logo-default.jpg";
+                : "/assets/banner.png";
 
             container.innerHTML = `
         <div class="card shadow-sm">
             <img src="${imageSrc}"
-                 onerror="this.src='/assets/logo-default.jpg'"
+                 onerror="this.src='/assets/logo-default.png'"
                  class="card-img-top"
                  style="height:250px; object-fit:cover;">
 
@@ -227,7 +227,7 @@
         <div class="card h-100 shadow-sm">
 
             <img src="${imageSrc}"
-                 onerror="this.src='/assets/logo-default.jpg'"
+                 onerror="this.src='/assets/logo-default.png'"
                  class="card-img-top"
                  style="height:200px; object-fit:cover;">
 

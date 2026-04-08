@@ -4,7 +4,7 @@ export function renderDishRow(dish, buttonText, onClick, isAdded = false) {
     const div = document.createElement('div');
     // Stile coerente per righe catalogo e riepilogo
     div.className = "list-group-item d-flex align-items-center p-2 mb-2 shadow-sm border rounded justify-content-between bg-white";
-    const imgUrl = dish.imageUrl || dish.image || '../assets/logo-default.jpg';
+    const imgUrl = dish.imageUrl || dish.image || '../assets/logo-default.png';
 
     // Gestione ingredienti: se è array unisci, se stringa usa quella, se null metti trattino
     const ingredientsText = Array.isArray(dish.ingredients)
