@@ -257,13 +257,41 @@ router.get('/my-orders', authMiddleware, requireRole('CUSTOMER'), async (req, re
       .populate('restaurantId', 'displayName address')
       .populate({
         path: 'items.dishId',
-        select: 'name price image'   // selezioniamo solo ciò che serve
+        select: 'name price image prepTime'
       });
+
+    const ordersWithPrepTime = await Promise.all(orders.map(async (order) => {
+
+      const pendingOrders = await Order.find({
+        restaurantId: order.restaurantId._id,
+        status: { $in: ['ORDINATO', 'IN_PREPARAZIONE'] },
+        createdAt: { $lte: order.createdAt } //escludo gli ordini creati dopo il corrente
+      }).populate({
+        path: 'items.dishId',
+        select: 'prepTime'
+      });
+
+      let totalPrepTime = 0;
+
+      pendingOrders.forEach(o => {
+        o.items.forEach(item => {
+          const prep = item.dishId?.prepTime || 0;
+          totalPrepTime += prep * item.quantity;
+        });
+      });
+
+      const orderObj = order.toObject();
+      orderObj.estimatedWaitTime = totalPrepTime;
+
+      return orderObj;
+    }));
 
     res.json({
       success: true,
-      data: orders
+      data: ordersWithPrepTime
     });
+
+
 
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
