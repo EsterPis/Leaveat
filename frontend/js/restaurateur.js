@@ -40,10 +40,10 @@ function isEmpty(value) {
 function isValidEmail(email) { return emailRegex.test(email); }
 function isValidPhone(phone) { return phoneRegex.test(phone); }
 function isValidVAT(vat) { return vatRegex.test(vat); }
-function isValidIBAN(iban) { 
+function isValidIBAN(iban) {
     if (!iban) return false;
     // Rimuovi spazi e metti maiuscolo
-    return ibanRegex.test(iban.replace(/\s+/g, '').toUpperCase()); 
+    return ibanRegex.test(iban.replace(/\s+/g, '').toUpperCase());
 }
 
 function validateFiscalData(d) {
@@ -84,9 +84,9 @@ function showStep(n) {
 
 function showAlert(type, message) {
     const alertContainer = document.getElementById('alertMessage');
-    if (!alertContainer) { 
+    if (!alertContainer) {
         alert(message);
-        return; 
+        return;
     }
     alertContainer.className = 'alert mt-3';
     alertContainer.classList.add(type === 'success' ? 'alert-success' : 'alert-danger');
@@ -111,8 +111,8 @@ function getFiscalData() {
     };
 }
 
-// --- GESTIONE EVENTI STEPPER ---
 function setupStepperEvents() {
+
     const startBtn = document.getElementById('startWizard');
     if (startBtn) {
         startBtn.onclick = () => {
@@ -122,83 +122,45 @@ function setupStepperEvents() {
         };
     }
 
-    document.getElementById('toStep2').onclick = () => {
-        clearAlert();
-        const fiscalData = getFiscalData();
-        if (validateFiscalData(fiscalData)) {
-            showStep(2);
-        }
-    };
+    const finishBtn = document.getElementById('finish');
+    if (finishBtn) {
+        finishBtn.onclick = async () => {
+            clearAlert();
 
-    document.getElementById('toStep3').onclick = () => {
-        clearAlert();
-        const wizardData = gatherWizardData();
-        
-        // Validazione Ristorante (importata da logic)
-        if (!validateRestaurantData(wizardData.restaurant)) {
-            showAlert('error', 'Compila correttamente tutti i campi del ristorante.');
-            return;
-        }
-        showStep(3);
-    };
+            const fData = getFiscalData();
 
-    document.getElementById('back1').onclick = () => { clearAlert(); showStep(1); };
-    document.getElementById('back2').onclick = () => { clearAlert(); showStep(2); };
+            if (!validateFiscalData(fData)) return;
 
-    // FINISH (Invio al Server)
-    document.getElementById('finish').onclick = async () => {
-        clearAlert();
-        
-        const fData = getFiscalData();
-        if (!validateFiscalData(fData)) { showStep(1); return; }
+            try {
+                const payload = {
+                    VATNumber: fData.vatNumber,
+                    legalRepresentativeName: fData.legalRepresentative,
+                    adminEmail: fData.adminEmail,
+                    bankAccountHolder: fData.bankAccountHolder,
+                    IBAN: fData.iban
+                };
 
-        const wizardData = gatherWizardData(); // Prende active status e dati
-        if (wizardData.menuDishes.length === 0) {
-            showAlert('error', "Il menù è vuoto! Aggiungi almeno un piatto.");
-            return;
-        }
+                const res = await fetch(`${API_RESTAURATEURS}/complete-registration`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
 
-        // --- FIX ERRORE 400: MAPPING DEI CAMPI ---
-        // Il backend (Restaurateur.js) vuole: VATNumber, legalRepresentativeName, IBAN
-        const payload = {
-            VATNumber: fData.vatNumber,               // Mapping corretto
-            legalRepresentativeName: fData.legalRepresentative, // Mapping corretto
-            adminEmail: fData.adminEmail,
-            bankAccountHolder: fData.bankAccountHolder,
-            IBAN: fData.iban,
-            // Ristorante e Menu
-            restaurant: wizardData.restaurant,
-            menu: wizardData.menuDishes 
-        };
+                const json = await res.json();
 
-        console.log("Invio payload:", payload); // Debug per vedere cosa invii
-
-        try {
-            const res = await fetch(`${API_RESTAURATEURS}/complete-registration`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            const json = await res.json();
-
-            if (res.ok && json.success) {
-                const alertBox = document.getElementById('alert');
-                if(alertBox) {
-                    alertBox.className = 'alert alert-success mt-3';
-                    alertBox.textContent = 'Profilo completato! Reindirizzamento...';
-                    alertBox.classList.remove('d-none');
+                if (res.ok && json.success) {
+                    window.location.href = 'create-restaurant.html';
+                } else {
+                    showAlert('error', json.message || 'Errore salvataggio dati fiscali.');
                 }
-                setTimeout(() => window.location.href = './restaurateur-dashboard.html', 1500);
-            } else {
-                showAlert('error', json.message || 'Errore nella procedura (400/500).');
+
+            } catch (err) {
+                console.error(err);
+                showAlert('error', 'Errore di comunicazione con il server.');
             }
-        } catch (err) {
-            console.error(err);
-            showAlert('error', 'Errore di comunicazione con il server.');
-        }
-    };
+        };
+    }
 }

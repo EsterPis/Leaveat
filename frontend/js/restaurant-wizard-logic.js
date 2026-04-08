@@ -319,14 +319,14 @@ async function handleDirectCreation() {
         // IMPORTANTE: Assicurati che il backend 'POST /dishes' colleghi il piatto al ristorante
         // E che aggiorni l'array dishIds dentro Menu.
         for (const dish of data.menuDishes) {
-            // Pulizia dati prima dell'invio
-            const dishPayload = {
-                ...dish,
-                restaurantId: restaurantId,
-                // Assicuriamoci che ingredients sia un array valido
-                ingredients: Array.isArray(dish.ingredients) ? dish.ingredients : []
-            };
+            const { _id, __v, createdAt, updatedAt, ...cleanDish } = dish;
 
+            const dishPayload = {
+                ...cleanDish,
+                restaurantId: restaurantId,
+                ingredients: Array.isArray(cleanDish.ingredients) ? cleanDish.ingredients : []
+            };
+            console.log("PAYLOAD DISH:", dishPayload);
             await fetch('/api/lv/dishes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

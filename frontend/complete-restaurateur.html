@@ -3,178 +3,144 @@
 
 <head>
   <meta charset="utf-8">
-  <title>Completa profilo ristoratore</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Completa profilo ristoratore - Leaveat</title>
+
+  <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
 
 <body class="bg-light">
-  <nav class="navbar bg-light px-3">
-    <a href="index.html" class="navbar-brand d-flex align-items-center">
-      <i class="bi bi-house-fill fs-3"></i>
-    </a>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="/index.html">Leaveat</a>
+    </div>
   </nav>
 
-  <div class="container py-4">
+  <!-- CONTENUTO -->
+  <div class="container py-5" style="max-width: 800px;">
+
+    <!-- ALERT -->
     <div id="alertMessage" class="alert d-none" role="alert"></div>
     <!-- INTRO -->
-    <section id="intro" class="card p-3 mb-4">
-      <div class="d-flex justify-content-between align-items-center">
-        <div>
-          <h1 class="h4 mb-1">Completa il tuo profilo ristoratore</h1>
-          <p class="text-muted mb-0">Prima di iniziare ti spieghiamo brevemente perché ti chiediamo questi dati.</p>
-        </div>
-      </div>
+    <section id="intro" class="mb-4">
 
-      <button class="btn btn-link px-0 mt-2 d-inline-flex align-items-center" type="button" data-bs-toggle="collapse"
+      <h1 class="h4 mb-2">Completa il tuo profilo ristoratore</h1>
+
+      <p class="text-muted mb-2">
+        Inserisci i tuoi dati fiscali per iniziare. Ti serviranno per attivare i pagamenti e gestire correttamente il
+        tuo ristorante.
+      </p>
+
+      <!-- TOGGLE DETTAGLI -->
+      <button class="btn btn-link px-0 d-inline-flex align-items-center" type="button" data-bs-toggle="collapse"
         data-bs-target="#introText">
-        <span class="me-1">Mostra / nascondi dettagli</span>
+        <span class="me-1">Dettagli</span>
         <i class="bi bi-chevron-down"></i>
       </button>
 
-      <div class="collapse mt-2" id="introText">
-        <div class="border rounded p-3 bg-light">
-          <p class="mb-2">Benvenuto su Leaveat!</p>
+      <!-- CONTENUTO ESPANDIBILE -->
+      <div class="collapse mt-3" id="introText">
+        <div class="border rounded p-3 bg-white small">
 
           <p class="mb-2">
-            Il prossimo passaggio è la compilazione del modulo di registrazione. Richiediamo questi dati per due motivi
-            fondamentali:
+            Queste informazioni servono per:
           </p>
 
-          <p class="mb-1"><strong>Massimizzare le tue vendite:</strong> Informazioni precise e complete ti permettono di
-            apparire correttamente nelle ricerche dei clienti, mostrando i tuoi orari esatti e le tue specialità
-            culinarie. Più siamo precisi, più ordini ricevi!</p>
-
-          <p class="mb-1"><strong>Garantire un servizio impeccabile:</strong> I dati operativi e finanziari sono
-            essenziali per attivare i pagamenti, garantire consegne puntuali e offrire ai tuoi clienti un'esperienza di
-            acquisto fluida e professionale.</p>
-
-          <p class="mb-1"><strong>Cosa otterrai completando questa registrazione?</strong></p>
-          <ul>
-            <li><strong>Visibilità Immediata:</strong> Metti la tua insegna virtuale davanti a migliaia di potenziali
-              clienti nella tua zona.</li>
-            <li><strong>Nuovi Ricavi Garantiti:</strong> Sfrutta la crescente domanda di delivery, trasformando le ore
-              meno trafficate in opportunità di guadagno.</li>
-            <li><strong>Pannello di Gestione Semplice:</strong> Avrai accesso immediato al nostro intuitivo pannello per
-              gestire gli ordini, aggiornare il menù e tracciare le tue performance.</li>
+          <ul class="mb-2">
+            <li><strong>Gestire i pagamenti</strong> in modo sicuro e tracciato</li>
+            <li><strong>Mostrare correttamente il tuo ristorante</strong> ai clienti</li>
+            <li><strong>Garantire un servizio affidabile</strong> sulla piattaforma</li>
           </ul>
 
-          <p class="mb-1">
-            La compilazione richiede solo <strong>5–7 minuti</strong>. Iniziamo subito a costruire la tua vetrina
-            digitale!
+          <p class="mb-2">
+            Una volta completata questa fase, potrai:
           </p>
 
-          <p class="mb-0">
-            <strong>Tip:</strong> compila attentamente tutti i campi, specialmente quelli relativi all'IBAN e agli orari
-            di apertura, per evitare ritardi nell'attivazione del tuo servizio.
+          <ul class="mb-2">
+            <li>Creare il tuo ristorante</li>
+            <li>Aggiungere i piatti al menù</li>
+            <li>Iniziare a ricevere ordini</li>
+          </ul>
+
+          <p class="mb-0 text-muted">
+            Tempo richiesto: circa 5 minuti.
           </p>
+
         </div>
       </div>
+      <!-- CTA -->
+      <div class="mt-3">
+        <button class="btn btn-primary w-100" id="startWizard">
+          Inizia
+        </button>
+      </div>
 
-      <button class="btn btn-primary mt-3" id="startWizard">
-        Ho capito, voglio procedere
-      </button>
     </section>
+    <!-- STEP 1 -->
+    <section id="step1" class="card shadow-sm p-4 d-none">
 
-    <!-- Stepper semplice -->
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item active" id="step1Crumb">1 - Dati fiscali</li>
-      <li class="breadcrumb-item" id="step2Crumb">2 - Ristorante</li>
-      <li class="breadcrumb-item" id="step3Crumb">3 - Menù</li>
-    </ol>
-
-    <!-- STEP 1: DATI FISCALI -->
-    <section id="step1" class="card p-3 mb-3 d-none">
-      <h2 class="h5 mb-3">Dati fiscali</h2>
-      <p class="text-muted small">
-        Queste informazioni vengono utilizzate per la fatturazione e la gestione dei pagamenti.
+      <h2 class="h5 mb-2">Dati fiscali</h2>
+      <p class="text-muted small mb-3">
+        Queste informazioni sono necessarie per la gestione dei pagamenti.
       </p>
 
       <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label">Nome del rappresentante legale / titolare <span class="text-danger">*</span></label>
-          <input id="legalRepresentativeName" class="form-control" placeholder="Es. Mario Rossi">
-        </div>
 
         <div class="col-md-6">
-          <label class="form-label">Indirizzo e-mail amministrativa <span class="text-danger">*</span></label>
-          <input id="adminEmail" type="email" class="form-control" placeholder="amministrazione@tuoristorante.it">
+          <label class="form-label">
+            Nome rappresentante legale <span class="text-danger">*</span>
+          </label>
+          <input id="legalRepresentativeName" class="form-control" placeholder="Mario Rossi">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">
+            Email amministrativa <span class="text-danger">*</span>
+          </label>
+          <input id="adminEmail" type="email" class="form-control" placeholder="amministrazione@ristorante.it">
         </div>
 
         <div class="col-md-4">
-          <label class="form-label">Partita IVA <span class="text-danger">*</span></label>
-          <input id="vat" class="form-control" placeholder="IT12345678901">
+          <label class="form-label">
+            Partita IVA <span class="text-danger">*</span>
+          </label>
+          <input id="vat" class="form-control" placeholder="12345678901">
         </div>
 
         <div class="col-md-4">
-          <label class="form-label">Intestatario del conto corrente <span class="text-danger">*</span></label>
-          <input id="bankHolder" class="form-control" placeholder="Es. Mario Rossi">
+          <label class="form-label">
+            Intestatario conto <span class="text-danger">*</span>
+          </label>
+          <input id="bankHolder" class="form-control" placeholder="Mario Rossi">
         </div>
 
         <div class="col-md-4">
-          <label class="form-label">IBAN <span class="text-danger">*</span></label>
+          <label class="form-label">
+            IBAN <span class="text-danger">*</span>
+          </label>
           <input id="iban" class="form-control" placeholder="IT00A0123412341234567891234">
         </div>
+
       </div>
 
-      <div class="mt-3 d-flex justify-content-end">
-        <button class="btn btn-primary" id="toStep2">Prosegui</button>
+      <div class="mt-4 d-flex justify-content-end">
+        <button class="btn btn-success" id="finish">
+          Continua
+        </button>
       </div>
+
     </section>
 
-    <!-- STEP 2: RISTORANTE -->
-    <section id="step2" class="d-none">
-      <div id="restaurant-form-container"></div>
-      <div class="mt-3 d-flex gap-2">
-        <button class="btn btn-secondary" id="back1">Indietro</button>
-        <button class="btn btn-primary" id="toStep3">Prosegui</button>
-      </div>
-    </section>
+  </div>
 
-    <!-- STEP 3: MENU -->
-    <section id="step3" class="d-none">
-      <div id="menu-builder-container"></div>
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="/js/restaurateur.js"></script>
 
-      <div class="d-flex justify-content-between mt-4">
-        <button class="btn btn-secondary" id="back2">Indietro</button>
-        <button class="btn btn-success fw-bold" id="finish">CONFERMA E REGISTRA</button>
-      </div>
-    </section>
-
-    <!--MODAL-->
-    <!-- MODALE IMPORT PIATTO -->
-    <div class="modal fade" id="wizardImportModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-
-          <div class="modal-header">
-            <h5 class="modal-title">Configura piatto</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label">Prezzo (€)</label>
-              <input type="number" id="wizard-price" class="form-control" step="0.50">
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Tempo di preparazione (minuti)</label>
-              <input type="number" id="wizard-preptime" class="form-control">
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-            <button class="btn btn-primary" id="wizard-confirm-btn">Aggiungi</button>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script type="module" src="/js/restaurateur.js"></script>
 </body>
 
 </html>

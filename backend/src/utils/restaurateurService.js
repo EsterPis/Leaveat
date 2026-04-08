@@ -92,61 +92,6 @@ async function createRestaurant(restaurateurId, rData, session) {
   return created[0];
 }
 
-// Creates custom dishes 
-async function createCustomDishes(menuData, restaurantId, session) {
-  const customDishes = menuData.customDishes || [];
-  const createdIds = [];
-
-  if (customDishes.length > 0) {
-    const docs = customDishes.map(d => ({
-      name: d.name,
-      category: d.category,
-      price: d.price,
-      ingredients: d.ingredients,
-      description: d.description,
-      image: d.imageUrl,
-      restaurantId,
-      source: 'restaurant'
-    }));
-
-    const saved = await Dish.create(docs, { session });
-    saved.forEach(d => createdIds.push(d._id));
-  }
-
-  return createdIds;
-}
-
-// Clones dishes from the catalog
-async function cloneCatalogDishes(menuData, restaurantId, session) {
-  const catalogItems = menuData.fromCatalog || [];
-  const clonedIds = [];
-
-  for (const item of catalogItems) {
-    const original = await Dish.findById(item.dishId).session(session);
-
-    if (!original) continue;
-
-    const clone = new Dish({
-      name: original.name,
-      category: original.category,
-      area: original.area,
-      instructions: original.instructions,
-      image: original.image,
-      ingredients: original.ingredients,
-      measures: original.measures,
-      price: item.price,
-      restaurantId,
-      source: 'restaurant',
-      externalId: original.externalId
-    });
-
-    await clone.save({ session });
-    clonedIds.push(clone._id);
-  }
-
-  return clonedIds;
-}
-
 // Creates the Menu and links it to the Restaurant
 async function createMenu(restaurantId, dishIds, session) {
   const created = await Menu.create([{
@@ -173,17 +118,65 @@ async function completeRegistration(userId, payload) {
     } = payload;
 
     validateFiscalData({ VATNumber, legalRepresentativeName, adminEmail, bankAccountHolder, IBAN });
-    validateRestaurantData(rData);
+    if (!menu) {
+      // Caso registrazione solo dati fiscali
+      const fiscalData = { VATNumber, legalRepresentativeName, adminEmail, bankAccountHolder, IBAN };
+      const restaurateur = await createOrUpdateRestaurateur(userId, fiscalData, session);
 
-    if (!menu) throw new Error('Menu data missing.');
+      await session.commitTransaction();
+      session.endSession();
+
+      return {
+        restaurateurId: restaurateur._id
+      };
+    }
+    validateRestaurantData(rData);
 
     const fiscalData = { VATNumber, legalRepresentativeName, adminEmail, bankAccountHolder, IBAN };
     const restaurateur = await createOrUpdateRestaurateur(userId, fiscalData, session);
     const restaurant = await createRestaurant(restaurateur._id, rData, session);
-    const customDishIds = await createCustomDishes(menu, restaurant._id, session);
-    const catalogDishIds = await cloneCatalogDishes(menu, restaurant._id, session);
-    const allDishIds = [...customDishIds, ...catalogDishIds];
+    const allDishIds = [];
     const menuDoc = await createMenu(restaurant._id, allDishIds, session);
+
+    for (const dish of menu) {
+      console.log("MENU LENGTH:", menu.length);
+      let newDish;
+
+      if (dish.source === 'catalog') {
+        // clone catalog
+        const original = await Dish.findById(dish._id).session(session);
+
+        if (!original) continue;
+
+        newDish = new Dish({
+          name: original.name,
+          category: original.category,
+          area: original.area,
+          instructions: original.instructions,
+          image: original.image,
+          ingredients: original.ingredients,
+          measures: original.measures,
+          price: dish.price,
+          restaurantId: restaurant._id,
+          source: 'restaurant',
+          externalId: original.externalId
+        });
+
+        await newDish.save({ session });
+
+      } else {
+        // custom
+        newDish = await Dish.create([{
+          ...dish,
+          restaurantId: restaurant._id,
+          source: 'restaurant'
+        }], { session });
+
+        newDish = newDish[0];
+      }
+
+      allDishIds.push(newDish._id);
+    }
 
     restaurant.menuId = menuDoc._id;
     restaurant.status = 'ACTIVE';
