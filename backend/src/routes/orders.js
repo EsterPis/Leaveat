@@ -254,7 +254,7 @@ router.get('/my-orders', authMiddleware, requireRole('CUSTOMER'), async (req, re
 
     const orders = await Order.find({ customerId })
       .sort({ createdAt: -1 })
-      .populate('restaurantId', 'displayName address')
+      .populate('restaurantId', 'displayName address imageUrl')
       .populate({
         path: 'items.dishId',
         select: 'name price image prepTime'

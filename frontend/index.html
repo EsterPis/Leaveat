@@ -61,6 +61,8 @@
 
   <!-- ================= RISULTATI ================= -->
   <main class="container py-4">
+    <!-- Sezioni personalizzate (solo CUSTOMER) -->
+    <div id="personalized-home"></div>
     <div id="results" class="row g-3"></div>
   </main>
 
@@ -177,8 +179,8 @@
     fetchRestaurants({});
   </script>
 
-  <!-- Gestione sessione -->
   <script src="/js/session.js"></script>
+  <script src="/js/index.js"></script> <!-- Dopo session perchè ha bisogno di verificare se l'utnete è loggato-->
 
 </body>
 

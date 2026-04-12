@@ -118,7 +118,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 
             profile = await Customer
                 .findOne({ userId: user._id })
-                .populate('preferences.favoriteRestaurantIds', 'displayName');
+                .populate('preferences.favoriteRestaurantIds', 'displayName imageUrl address');
 
         }
 
