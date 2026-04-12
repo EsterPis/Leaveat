@@ -266,9 +266,9 @@ async function loadOrders() {
             updateBtn.addEventListener('click', () => {
 
                 if (order.status === 'ORDINATO') {
-                    updateStatus(order._id, 'IN_PREPARAZIONE');
+                    updateOrderStatus(order._id, 'IN_PREPARAZIONE');
                 } else if (order.status === 'IN_PREPARAZIONE') {
-                    updateStatus(order._id, 'CONSEGNATO');
+                    updateOrderStatus(order._id, 'CONSEGNATO');
                 }
             });
 
@@ -281,7 +281,7 @@ async function loadOrders() {
 }
 
 // FUNZIONE 3: Aggiorna Stato Ordine
-async function updateStatus(orderId, newStatus) {
+async function updateOrderStatus(orderId, newStatus) {
     if (!confirm(`Cambiare stato in ${newStatus}?`)) return;
 
     try {
