@@ -24,6 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const deleteBtn = document.getElementById('btn-delete-restaurant');
+
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', deleteRestaurant);
+    }
+
     // Carica i dati iniziali
     loadRestaurantDetails();
     // Carica gli ordini
@@ -433,6 +439,44 @@ async function deleteDish(dishId) {
     } catch (error) {
         console.error('Errore di comunicazione: ', error);
         alert('Errore di comunicazione col server.');
+    }
+}
+
+async function deleteRestaurant() {
+
+    const confirmDelete = confirm(
+        "Sei sicuro di voler eliminare questo ristorante? L'operazione è irreversibile."
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+        const response = await fetch(`/api/lv/restaurants/${restaurantId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const json = await response.json();
+
+        if (response.ok) {
+            alert("Ristorante eliminato con successo");
+
+            // redirect alla dashboard
+            window.location.href = "restaurateur-dashboard.html";
+
+        } else {
+            if (response.status === 409) {
+                alert("Impossibile eliminare: ci sono ordini in corso.");
+            } else {
+                alert("Errore: " + (json.message || "Errore sconosciuto"));
+            }
+        }
+
+    } catch (err) {
+        console.error(err);
+        alert("Errore di comunicazione col server.");
     }
 }
 
