@@ -115,7 +115,12 @@
         card.className = "card mb-4";
 
         const itemsList = order.items.map(item =>
-          `<li>${item.quantity} × ${item.dishId.name}</li>`
+          `<li>
+            ${item.quantity} × 
+            <a href="/dish-details.html?id=${item.dishId._id}">
+              ${item.dishId.name}
+            </a>
+          </li>`
         ).join("");
 
         card.innerHTML = `
@@ -128,7 +133,7 @@
 
         <p class="text-muted">
           Ristorante:
-          <a href="/restaurant.html?id=${order.restaurantId._id}"> ${order.restaurantId.displayName}</a>
+          <a href="/restaurant-details.html?id=${order.restaurantId._id}"> ${order.restaurantId.displayName}</a>
           <br>
           ${new Date(order.createdAt).toLocaleString()}
           <br>Tempo stimato: ${order.estimatedWaitTime} min

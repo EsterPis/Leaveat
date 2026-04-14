@@ -224,27 +224,33 @@
                 : "/assets/logo-default.png";
 
             col.innerHTML = `
-        <div class="card h-100 shadow-sm">
+            <div class="card h-100 shadow-sm">
 
-            <img src="${imageSrc}"
-                 onerror="this.src='/assets/logo-default.png'"
-                 class="card-img-top"
-                 style="height:200px; object-fit:cover;">
+                <a href="/dish-details.html?id=${d._id}">
+                    <img src="${imageSrc}"
+                        onerror="this.src='/assets/logo-default.jpg'"
+                        class="card-img-top"
+                        style="height:200px; object-fit:cover;">
+                </a>
 
-            <div class="card-body d-flex flex-column">
-                <h5>${d.name}</h5>
+                <div class="card-body d-flex flex-column">
+                    <h5>
+                        <a href="/dish-details.html?id=${d._id}" class="text-decoration-none text-dark">
+                            ${d.name}
+                        </a>
+                    </h5>
 
-                <p class="small text-muted">${d.category || ""}</p>
+                    <p class="small text-muted">${d.category || ""}</p>
 
-                <p>€ ${Number(d.price).toFixed(2)}</p>
+                    <p>€ ${Number(d.price).toFixed(2)}</p>
 
-                <button class="btn btn-primary btn-sm mt-auto"
-                        onclick="addToCart('${d._id}')">
-                    Aggiungi al carrello
-                </button>
+                    <button class="btn btn-primary btn-sm mt-auto"
+                            onclick="addToCart('${d._id}')">
+                        Aggiungi al carrello
+                    </button>
+                </div>
             </div>
-        </div>
-    `;
+            `;
 
             return col;
         }
