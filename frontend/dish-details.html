@@ -31,13 +31,7 @@
 </head>
 <body class="bg-light">
 
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
-    <div class="container">
-      <a class="navbar-brand fw-bold" href="#">Leaveat <span class="fw-light">| Scheda Piatto</span></a>
-      <button onclick="window.close()" class="btn btn-outline-light btn-sm ms-auto">Chiudi Scheda</button>
-    </div>
-  </nav>
-
+  <!-- Dynamic Navbar -->
   <div id="loader" class="text-center mt-5">
     <div class="spinner-border text-primary" role="status"></div>
     <p class="mt-2">Caricamento bontà in corso...</p>
@@ -150,5 +144,7 @@
       }
     });
   </script>
+  <script type="module"> import { renderNavbar } from '/js/utils/navbar.js'; renderNavbar() </script>
+  <scipt src="/js/session.js"></scipt>
 </body>
 </html>

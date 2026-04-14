@@ -10,28 +10,7 @@
 </head>
 
 <body class="bg-light">
-<!-- ================= NAVBAR ================= -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-
-            <a class="navbar-brand" href="/index.html">Leaveat</a>
-
-            <div class="d-flex align-items-center gap-3">
-
-                <!-- Carrello -->
-                <a href="/cart.html" class="btn btn-outline-light position-relative cart-button">
-                    <i class="bi bi-cart3"></i>
-                    <span id="cart-count"
-                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        0
-                    </span>
-                </a>
-                <div class="ms-2 user-section"></div>
-
-            </div>
-
-        </div>
-    </nav>
+ <!--Dynamic navbar-->
   <div class="container py-5">
     <div class="row justify-content-center">
       <div class="col-md-6 col-lg-5">
@@ -76,6 +55,7 @@
     </div>
   </div>
   <script src="/js/auth.js"></script>
+  <script type="module"> import { renderNavbar } from '/js/utils/navbar.js'; renderNavbar() </script>
   <script src="/js/session.js"></script>
   <script>
     setupRegister();
