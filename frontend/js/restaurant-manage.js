@@ -1,42 +1,193 @@
-//Preleva parametri URL
+// =============================
+// IMPORT + GLOBAL STATE
+// =============================
+import { renderDishRow } from "./utils/ui-components.js";
+
 const urlParams = new URLSearchParams(window.location.search);
 const restaurantId = urlParams.get('id');
 const token = localStorage.getItem('token');
 
-import { renderDishRow } from "./utils/ui-components.js";
-
+// =============================
+// INIT
+// =============================
 document.addEventListener('DOMContentLoaded', () => {
+    initPage();
+});
+
+function initPage() {
+    if (!checkAuth()) return;
+
+    bindStaticEvents();
+    bindCatalogFilters();
+    bindAddDishForm();
+
+    loadInitialData();
+}
+
+// =============================
+// AUTH
+// =============================
+function checkAuth() {
     if (!token) {
         window.location.href = 'login.html';
-        return;
+        return false;
     }
+
     if (!restaurantId) {
         alert('Ristorante non specificato');
         window.location.href = 'restaurateur-dashboard.html';
-        return;
+        return false;
     }
 
-    const refreshBtn = document.getElementById('btn-refresh-orders');
+    return true;
+}
 
+// =============================
+// EVENT BINDING
+// =============================
+function bindStaticEvents() {
+
+    const refreshBtn = document.getElementById('btn-refresh-orders');
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => {
-            loadOrders();
-        });
+        refreshBtn.addEventListener('click', loadOrders);
     }
 
     const deleteBtn = document.getElementById('btn-delete-restaurant');
-
     if (deleteBtn) {
         deleteBtn.addEventListener('click', deleteRestaurant);
     }
 
-    // Carica i dati iniziali
+    const btnEditInfo = document.getElementById('btn-edit-info');
+    if (btnEditInfo) {
+        btnEditInfo.addEventListener('click', () => {
+            window.location.href = `edit-restaurant-info.html?id=${restaurantId}`;
+        });
+    }
+
+    const btnAddDish = document.getElementById('btn-add-dish');
+    if (btnAddDish) {
+        btnAddDish.addEventListener('click', openAddDishModal);
+    }
+}
+
+// =============================
+// INITIAL LOAD
+// =============================
+function loadInitialData() {
     loadRestaurantDetails();
-    // Carica gli ordini
     loadOrders();
     loadStats();
-});
+}
 
+// =============================
+// MODALI + FORM
+// =============================
+function openAddDishModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addDishModal'));
+    loadCatalogList('');
+    modal.show();
+}
+
+function bindAddDishForm() {
+
+    const addDishForm = document.getElementById('add-dish-form');
+    if (!addDishForm) return;
+
+    addDishForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('dish-name').value;
+        const category = document.getElementById('dish-category').value;
+        const price = document.getElementById('dish-price').value;
+        const ingredientsStr = document.getElementById('dish-ingredients').value;
+        const description = document.getElementById('dish-description').value;
+        const prepTimeInput = document.getElementById('dish-preptime').value;
+
+        const ingredients = ingredientsStr
+            .split(',')
+            .map(i => i.trim())
+            .filter(i => i.length > 0);
+
+        if (!ingredients.length) {
+            alert('Inserisci almeno un ingrediente');
+            return;
+        }
+
+        const payload = {
+            name,
+            category,
+            price: parseFloat(price),
+            ingredients,
+            description,
+            restaurantId,
+            prepTime: prepTimeInput ? parseInt(prepTimeInput) : 15
+        };
+
+        try {
+            const response = await fetch('/api/lv/dishes', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const json = await response.json();
+
+            if (response.ok) {
+                alert('Piatto aggiunto con successo!');
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addDishModal'));
+                modal?.hide();
+
+                addDishForm.reset();
+                loadRestaurantDetails();
+            } else {
+                alert(json.message || 'Errore');
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert('Errore di comunicazione');
+        }
+    });
+}
+
+// =============================
+// FILTRI CATALOGO
+// =============================
+function bindCatalogFilters() {
+
+    const categorySelect = document.getElementById('catalog-category-filter');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', () => {
+            const query = document.getElementById('catalog-search-input').value;
+            loadCatalogList(query);
+        });
+    }
+
+    const searchInput = document.getElementById('catalog-search-input');
+    if (searchInput) {
+        const debouncedSearch = debounce(() => {
+            loadCatalogList(searchInput.value);
+        }, 300);
+
+        searchInput.addEventListener('input', debouncedSearch);
+    }
+
+    const ingredientInput = document.getElementById('catalog-ingredient-filter');
+    if (ingredientInput) {
+        ingredientInput.addEventListener('input', () => {
+            const query = document.getElementById('catalog-search-input').value;
+            loadCatalogList(query);
+        });
+    }
+}
+
+// =============================
+// CLONE MENU
+// =============================
 async function setupCloneInsideModal() {
     try {
         const response = await fetch('/api/lv/restaurants/my-restaurants', {
@@ -50,7 +201,6 @@ async function setupCloneInsideModal() {
 
         if (others.length > 0) {
             btn.classList.remove('d-none');
-
             btn.onclick = () => openCloneModal(others);
         }
 
@@ -70,11 +220,10 @@ function openCloneModal(restaurants) {
     previewContainer.style.display = 'none';
 
     select.innerHTML = '<option value="">Scegli...</option>' +
-        restaurants.map(r =>
-            `<option value="${r._id}">${r.displayName}</option>`
-        ).join('');
+        restaurants.map(r => `<option value="${r._id}">${r.displayName}</option>`).join('');
 
     select.onchange = async () => {
+
         const sourceId = select.value;
 
         confirmBtn.disabled = true;
@@ -91,9 +240,7 @@ function openCloneModal(restaurants) {
             const dishes = json.data.menuId?.dishIds || [];
 
             previewList.innerHTML = dishes.map(d =>
-                `<li class="list-group-item">
-                    ${d.name} (€${d.price})
-                </li>`
+                `<li class="list-group-item">${d.name} (€${d.price})</li>`
             ).join('');
 
             previewContainer.style.display = 'block';
@@ -121,10 +268,11 @@ function openCloneModal(restaurants) {
     modal.show();
 }
 
-// FUNZIONE 1: Carica Dettagli e Menù
+// =============================
+// RESTAURANT DETAILS
+// =============================
 async function loadRestaurantDetails() {
     try {
-        // Chiama la rotta GET /api/lv/restaurants/:id/manage
         const response = await fetch(`/api/lv/restaurants/${restaurantId}/manage`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -132,97 +280,140 @@ async function loadRestaurantDetails() {
         const json = await response.json();
         if (!json.success) throw new Error(json.message);
 
-        const r = json.data; // Oggetto Ristorante
+        const r = json.data;
+
         await setupCloneInsideModal();
 
-        // 1. Popola Header e Info Tab
-        document.getElementById('nav-restaurant-name').textContent = r.displayName;
+        const nameEl = document.getElementById('nav-restaurant-name');
 
-        const infoHtml = `
+        if (nameEl) {
+            nameEl.textContent = r.displayName;
+        }
+
+        document.getElementById('info-content').innerHTML = `
             <div class="col-md-6">
                 <p><strong>Nome Legale:</strong> ${r.legalName}</p>
-                <p><strong>Indirizzo:</strong> ${r.address.street} ${r.address.number}, ${r.address.city} (${r.address.province})</p>
-                <p><strong>Telefono:</strong> ${r.phoneNumber}</p>
-                <p><strong>Email:</strong> ${r.email || 'N/D'}</p>
-            </div>
-            <div class="col-md-6">
-                <p><strong>Orari:</strong> ${r.openingHours}</p>
-                <p><strong>Descrizione:</strong> ${r.description || '-'}</p>
-                <p><strong>Stato:</strong> <span class="badge bg-${r.status === 'ACTIVE' ? 'success' : 'secondary'}">${r.status}</span></p>
+                <p><strong>Indirizzo:</strong> ${r.address.street} ${r.address.number}, ${r.address.city}</p>
             </div>
         `;
-        document.getElementById('info-content').innerHTML = infoHtml;
 
-        // 2. Popola Tab Menù
-        const tbody = document.getElementById('menu-table-body');
-        tbody.innerHTML = '';
-        if (r.menuId && r.menuId.dishIds && r.menuId.dishIds.length > 0) {
-            r.menuId.dishIds.forEach(dish => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${dish.name}</td>
-                    <td>€ ${dish.price.toFixed(2)}</td>
-                    <td>
-                        <span class="badge bg-info text-dark">
-                            ${dish.prepTime || 15} min
-                        </span>
-                    </td>
-                    <td><span class="badge bg-light text-dark border">${dish.category}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-warning text-white btn-edit-dish me-2" data-dish-id="${dish._id}" title="Modifica Piatto">
-                            <i class="fas fa-pencil-alt"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger text-white btn-delete-dish" data-dish-id="${dish._id}" title="Elimina Piatto">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            // Dopo aver popolato la tabella, leghiamo gli eventi dinamici
-            bindMenuEvents();
-        } else {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nessun piatto nel menù.</td></tr>';
+        renderMenu(r.menuId?.dishIds || []);
+
+    } catch (err) {
+        console.error(err);
+        alert('Errore caricamento');
+    }
+}
+
+function renderMenu(dishes) {
+    const tbody = document.getElementById('menu-table-body');
+    tbody.innerHTML = '';
+
+    if (!dishes.length) {
+        tbody.innerHTML = '<tr><td colspan="5">Nessun piatto</td></tr>';
+        return;
+    }
+
+    dishes.forEach(dish => {
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+            <td>${dish.name}</td>
+            <td>€ ${dish.price.toFixed(2)}</td>
+            <td>
+                <span class="badge bg-info text-dark">
+                    ${dish.prepTime || 15} min
+                </span>
+            </td>
+            <td>
+                <span class="badge bg-light text-dark border">
+                    ${dish.category}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-warning text-white btn-edit-dish me-2"
+                    data-dish-id="${dish._id}">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+
+                <button class="btn btn-sm btn-danger text-white btn-delete-dish"
+                    data-dish-id="${dish._id}">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+
+    bindMenuEvents();
+}
+
+// =============================
+// MENU EVENTS
+// =============================
+function bindMenuEvents() {
+
+    document.querySelectorAll('.btn-edit-dish').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const dishId = e.currentTarget.dataset.dishId;
+            window.location.href = `edit-dish.html?id=${restaurantId}&dishId=${dishId}`;
+        });
+    });
+
+    document.querySelectorAll('.btn-delete-dish').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const dishId = e.currentTarget.dataset.dishId;
+
+            if (confirm('Eliminare?')) {
+                deleteDish(dishId);
+            }
+        });
+    });
+}
+
+// =============================
+// DELETE DISH
+// =============================
+async function deleteDish(dishId) {
+    try {
+        const response = await fetch(`/api/lv/dishes/${dishId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            loadRestaurantDetails();
         }
 
     } catch (err) {
         console.error(err);
-        alert('Errore caricamento dati ristorante: ' + err.message);
     }
 }
 
-// FUNZIONE 2: Carica e Gestisci Ordini
+// =============================
+// ORDERS
+// =============================
 async function loadOrders() {
+
     const container = document.getElementById('orders-container');
-    container.innerHTML = '<div class="spinner-border text-primary" role="status"></div>';
+    container.innerHTML = '<div class="spinner-border text-primary"></div>';
 
     try {
-        // NOTA: Assicurati di avere questa rotta nel backend (es. in un file orders.js)
-        // Se non esiste ancora, dovrai crearla seguendo le specifiche tecniche.
         const response = await fetch(`/api/lv/orders/restaurant/${restaurantId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        // Se la rotta non esiste ancora (404), gestiamo l'errore gentilmente per ora
-        if (response.status === 404) {
-            container.innerHTML = `<div class="alert alert-warning">
-                API Ordini non trovata. Assicurati di aver implementato la rotta backend 
-                <code>GET /api/lv/orders/restaurant/:id</code> o simile.
-            </div>`;
-            return;
-        }
-
         const json = await response.json();
         const orders = json.data || [];
 
-        container.innerHTML = ''; // Pulisci spinner
+        container.innerHTML = '';
 
-        if (orders.length === 0) {
-            container.innerHTML = '<div class="alert alert-info">Non ci sono ordini per questo ristorante.</div>';
+        if (!orders.length) {
+            container.innerHTML = '<div class="alert alert-info">Nessun ordine</div>';
             return;
         }
 
-        // Genera Card Ordini
         orders.forEach(order => {
 
             let badgeClass = 'bg-secondary';
@@ -235,402 +426,47 @@ async function loadOrders() {
             card.className = 'card mb-3 shadow-sm';
 
             card.innerHTML = `
-        <div class="card-body d-flex justify-content-between align-items-center">
-            <div>
-                <h5>Ordine #${order._id.slice(-6)}</h5>
-                <p class="mb-1">Totale: € ${order.totalPrice.toFixed(2)}</p>
-                <span class="badge ${badgeClass}">${order.status}</span>
-                <small class="text-muted ms-2">
-                    ${new Date(order.createdAt).toLocaleString()}
-                </small>
-            </div>
-            <div class="text-end">
-                <button class="btn btn-outline-secondary btn-sm mb-2 btn-details">
-                    Dettagli
-                </button>
-                <br>
-                <button class="btn btn-sm btn-primary btn-update">
-                    Aggiorna Stato
-                </button>
-            </div>
-        </div>
-    `;
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5>Ordine #${order._id.slice(-6)}</h5>
+                        <p class="mb-1">Totale: € ${order.totalPrice.toFixed(2)}</p>
+                        <span class="badge ${badgeClass}">${order.status}</span>
+                        <small class="text-muted ms-2">
+                            ${new Date(order.createdAt).toLocaleString()}
+                        </small>
+                    </div>
+                    <div class="text-end">
+                        <button class="btn btn-outline-secondary btn-sm mb-2 btn-details">
+                            Dettagli
+                        </button>
+                        <br>
+                        <button class="btn btn-sm btn-primary btn-update">
+                            Aggiorna Stato
+                        </button>
+                    </div>
+                </div>
+            `;
 
-            // EVENT LISTENERS CORRETTI
-            const detailsBtn = card.querySelector('.btn-details');
-            detailsBtn.addEventListener('click', () => {
+            // eventi
+            card.querySelector('.btn-details').addEventListener('click', () => {
                 showOrderDetails(order);
             });
 
-            const updateBtn = card.querySelector('.btn-update');
-            updateBtn.addEventListener('click', () => {
+            card.querySelector('.btn-update').addEventListener('click', () => {
 
                 if (order.status === 'ORDINATO') {
-                    updateOrderStatus(order._id, 'IN_PREPARAZIONE');
+                    updateStatus(order._id, 'IN_PREPARAZIONE');
                 } else if (order.status === 'IN_PREPARAZIONE') {
-                    updateOrderStatus(order._id, 'CONSEGNATO');
+                    updateStatus(order._id, 'CONSEGNATO');
                 }
             });
 
             container.appendChild(card);
         });
-    } catch (err) {
-        console.error(err);
-        container.innerHTML = `<div class="alert alert-danger">Errore caricamento ordini.</div>`;
-    }
-}
-
-// FUNZIONE 3: Aggiorna Stato Ordine
-async function updateOrderStatus(orderId, newStatus) {
-    if (!confirm(`Cambiare stato in ${newStatus}?`)) return;
-
-    try {
-        const response = await fetch(`/api/lv/orders/${orderId}/status`, {
-            method: 'PATCH', // Come da specifiche [cite: 482]
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ status: newStatus })
-        });
-
-        if (response.ok) {
-            loadOrders(); // Ricarica la lista
-        } else {
-            alert('Errore aggiornamento stato');
-        }
-    } catch (err) {
-        console.error(err);
-        alert('Errore di rete');
-    }
-}
-
-//Modifica Dati Ristorante (pulsante grande in Info Tab)
-const btnEditInfo = document.getElementById('btn-edit-info');
-if (btnEditInfo) {
-    btnEditInfo.addEventListener('click', () => {
-        // Reindirizza a una pagina dedicata per la modifica dei dati del ristorante
-        window.location.href = `edit-restaurant-info.html?id=${restaurantId}`;
-    });
-}
-
-//Aggiungi Piatto (pulsante grande in Menù Tab)
-const btnAddDish = document.getElementById('btn-add-dish');
-if (btnAddDish) {
-    btnAddDish.addEventListener('click', () => {
-        // Usa la classe Bootstrap per aprire il modale
-        const addDishModal = new bootstrap.Modal(document.getElementById('addDishModal'));
-        loadCatalogList(''); // Carica piatti catalog nel modale
-        addDishModal.show();
-    });
-}
-
-
-//Gestione invio form (POST /api/lv/dishes)
-const addDishForm = document.getElementById('add-dish-form');
-
-if (addDishForm) {
-    addDishForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const name = document.getElementById('dish-name').value;
-        const category = document.getElementById('dish-category').value;
-        const price = document.getElementById('dish-price').value;
-        const ingredientsStr = document.getElementById('dish-ingredients').value;
-        const description = document.getElementById('dish-description').value;
-
-        // Converto la stringa di ingredienti in un array
-        const ingredients = ingredientsStr.split(',').map(i => i.trim()).filter(i => i.length > 0);
-
-        if (ingredients.length === 0) {
-            alert('Inserisci almeno un ingrediente, separando con una virgola.');
-            return;
-        }
-
-        const prepTimeInput = document.getElementById('dish-preptime').value;
-
-        const payload = {
-            name: name,
-            category: category,
-            price: parseFloat(price),
-            ingredients: ingredients,
-            description: description,
-            restaurantId: restaurantId,
-            prepTime: prepTimeInput ? parseInt(prepTimeInput) : 15
-        };
-
-        try {
-            const response = await fetch('/api/lv/dishes', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const json = await response.json();
-
-            if (response.ok) {
-                alert('Piatto aggiunto con successo!');
-
-                // Chiudi il modale
-                const modalElement = document.getElementById('addDishModal');
-                const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-
-                addDishForm.reset();
-                loadRestaurantDetails(); // Ricarica la tabella per mostrare il nuovo piatto
-            } else {
-                alert('Errore: ' + (json.message || 'Errore sconosciuto.'));
-            }
-        } catch (error) {
-            console.error(error);
-            alert('Errore di comunicazione col server.');
-        }
-    });
-}
-
-
-
-//Collega Eventi ai Pulsanti dei Piatti (chiamata da loadRestaurantDetails)
-function bindMenuEvents() {
-    // Gestione click per la modifica del singolo piatto
-    document.querySelectorAll('.btn-edit-dish').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const dishId = e.currentTarget.getAttribute('data-dish-id');
-            // Reindirizza a una pagina di modifica piatto, passando l'ID del piatto
-            // Dovrai creare la pagina edit-dish.html
-            window.location.href = `edit-dish.html?id=${restaurantId}&dishId=${dishId}`;
-        });
-    });
-
-    // Gestione click per l'eliminazione del singolo piatto
-    document.querySelectorAll('.btn-delete-dish').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const dishId = e.currentTarget.getAttribute('data-dish-id');
-            if (confirm(`Sei sicuro di voler eliminare il piatto? (ID: ${dishId})`)) {
-                deleteDish(dishId); // Chiama la funzione API
-            }
-        });
-    });
-}
-
-//Eliminazione Piatto (Richiesta DELETE /api/lv/dishes/:id)
-async function deleteDish(dishId) {
-    try {
-        const response = await fetch(`/api/lv/dishes/${dishId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (response.ok) {
-            alert('Piatto eliminato con successo!');
-            loadRestaurantDetails(); // Ricarica la tabella dopo l'eliminazione
-        } else {
-            const json = await response.json();
-            alert('Errore nell\'eliminazione del piatto: ' + (json.message || 'Errore sconosciuto.'));
-        }
-    } catch (error) {
-        console.error('Errore di comunicazione: ', error);
-        alert('Errore di comunicazione col server.');
-    }
-}
-
-async function deleteRestaurant() {
-
-    const confirmDelete = confirm(
-        "Sei sicuro di voler eliminare questo ristorante? L'operazione è irreversibile."
-    );
-
-    if (!confirmDelete) return;
-
-    try {
-        const response = await fetch(`/api/lv/restaurants/${restaurantId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        const json = await response.json();
-
-        if (response.ok) {
-            alert("Ristorante eliminato con successo");
-
-            // redirect alla dashboard
-            window.location.href = "restaurateur-dashboard.html";
-
-        } else {
-            if (response.status === 409) {
-                alert("Impossibile eliminare: ci sono ordini in corso.");
-            } else {
-                alert("Errore: " + (json.message || "Errore sconosciuto"));
-            }
-        }
 
     } catch (err) {
         console.error(err);
-        alert("Errore di comunicazione col server.");
-    }
-}
-
-// GESTIONE RICERCA CATALOGO
-//search by category
-const categorySelect = document.getElementById('catalog-category-filter');
-if (categorySelect) {
-    categorySelect.addEventListener('change', () => {
-        const query = document.getElementById('catalog-search-input').value;
-        loadCatalogList(query);
-    });
-}
-// search by name
-const searchInput = document.getElementById('catalog-search-input');
-if (searchInput) {
-    const debouncedSearch = debounce(() => {
-        const query = searchInput.value;
-        loadCatalogList(query);
-    }, 300);
-
-    searchInput.addEventListener('input', debouncedSearch);
-}
-//search by ingredient
-const ingredientInput = document.getElementById('catalog-ingredient-filter');
-if (ingredientInput) {
-    ingredientInput.addEventListener('input', () => {
-        const query = document.getElementById('catalog-search-input').value;
-        loadCatalogList(query);
-    });
-}
-
-async function importDish(catalogDishId) {
-
-    const modal = new bootstrap.Modal(document.getElementById('importDishModal'));
-    const priceInput = document.getElementById('import-price');
-    const prepTimeInput = document.getElementById('import-preptime');
-    const confirmBtn = document.getElementById('confirm-import-btn');
-
-    // reset campi
-    priceInput.value = '';
-    prepTimeInput.value = '';
-
-    modal.show();
-
-    confirmBtn.onclick = async () => {
-
-        const price = priceInput.value;
-        const prepTime = prepTimeInput.value;
-
-        if (!price) {
-            alert("Inserisci il prezzo");
-            return;
-        }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const currentRestaurantId = urlParams.get('id');
-
-        try {
-            const response = await fetch('/api/lv/dishes/import', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    catalogDishId: catalogDishId,
-                    restaurantId: currentRestaurantId,
-                    price: parseFloat(price),
-                    prepTime: prepTime ? parseInt(prepTime) : 15
-                })
-            });
-
-            const json = await response.json();
-
-            if (json.success) {
-                modal.hide();
-                alert('Piatto importato!');
-                loadRestaurantDetails();
-            } else {
-                alert('Errore: ' + json.message);
-            }
-
-        } catch (err) {
-            alert('Errore di comunicazione');
-        }
-    };
-}
-
-function debounce(fn, delay = 300) {
-    let timeout;
-    return (...args) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => fn(...args), delay);
-    };
-}
-
-/**
- * Carica i piatti dal catalogo e li mostra nel modale.
- * Se nameQuery è vuota, mostra i piatti predefiniti.
- */
-async function loadCatalogList(nameQuery = '') {
-    const resultsContainer = document.getElementById('catalog-results');
-    if (!resultsContainer) return;
-
-    resultsContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-primary"></div> Caricamento...</div>';
-
-    try {
-        const params = new URLSearchParams();
-
-        if (nameQuery) params.append('name', nameQuery);
-
-        const category = document.getElementById('catalog-category-filter')?.value;
-        if (category) params.append('category', category);
-
-        const ingredient = document.getElementById('catalog-ingredient-filter')?.value;
-        if (ingredient) params.append('ingredient', ingredient);
-
-        // solo catalogo
-        params.append('source', 'catalog');
-
-        const url = `/api/lv/dishes?${params.toString()}`;
-        const res = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const json = await res.json();
-
-        resultsContainer.innerHTML = '';
-
-        // Popola categorie
-        const select = document.getElementById('catalog-category-filter');
-
-        if (select && select.options.length === 1) {
-            const categories = [...new Set(json.data.map(d => d.category).filter(Boolean))];
-
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                select.appendChild(option);
-            });
-        }
-
-        if (!json.success || !json.data || json.data.length === 0) {
-            resultsContainer.innerHTML = '<p class="text-center text-muted p-3">Nessun piatto trovato.</p>';
-            return;
-        }
-
-        json.data.forEach(dish => {
-            // Utilizza la funzione renderDishRow importata dal modulo ui-components.js
-            const dishRow = renderDishRow(dish, 'Importa', (d) => importDish(d._id));
-            resultsContainer.appendChild(dishRow);
-        });
-    } catch (err) {
-        resultsContainer.innerHTML = '<p class="text-danger text-center p-3">Errore nel caricamento.</p>';
+        container.innerHTML = `<div class="alert alert-danger">Errore caricamento ordini</div>`;
     }
 }
 
@@ -682,17 +518,63 @@ function showOrderDetails(order) {
     modal.show();
 }
 
-async function loadStats() {
+async function updateStatus(orderId, newStatus) {
+    if (!confirm(`Cambiare stato in ${newStatus}?`)) return;
 
     try {
+        const response = await fetch(`/api/lv/orders/${orderId}/status`, {
+            method: 'PATCH', // Come da specifiche [cite: 482]
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
 
-        const response = await fetch(`/api/lv/restaurants/${restaurantId}/stats`, {
+        if (response.ok) {
+            loadOrders(); // Ricarica la lista
+        } else {
+            alert('Errore aggiornamento stato');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Errore di rete');
+    }
+}
+
+// =============================
+// DELETE RESTAURANT
+// =============================
+async function deleteRestaurant() {
+
+    if (!confirm("Sei sicuro?")) return;
+
+    try {
+        const response = await fetch(`/api/lv/restaurants/${restaurantId}`, {
+            method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        const json = await response.json();
+        if (response.ok) {
+            window.location.href = "restaurateur-dashboard.html";
+        }
 
-        if (!json.success) throw new Error(json.message);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// =============================
+// STATS
+// =============================
+async function loadStats() {
+    try {
+        const res = await fetch(`/api/lv/restaurants/${restaurantId}/stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const json = await res.json();
+        if (!json.success) throw new Error();
 
         const stats = json.data;
 
@@ -701,27 +583,62 @@ async function loadStats() {
         renderTopDishesChart(stats.topDishes);
 
     } catch (err) {
-
         console.error(err);
-
         document.getElementById('stats-pane').innerHTML =
             `<div class="alert alert-danger">Errore caricamento statistiche</div>`;
     }
 }
 
 function renderSummary(summary) {
+    document.getElementById('stat-total-orders').textContent = summary.totalOrders;
+    document.getElementById('stat-completed-orders').textContent = summary.completedOrders;
+    document.getElementById('stat-revenue').textContent = `€${summary.revenue.toFixed(2)}`;
+    document.getElementById('stat-average').textContent = `€${summary.avgOrder.toFixed(2)}`;
+}
 
-    document.getElementById('stat-total-orders').textContent =
-        summary.totalOrders;
+// =============================
+// CATALOGO
+// =============================
+async function loadCatalogList(nameQuery = '') {
 
-    document.getElementById('stat-completed-orders').textContent =
-        summary.completedOrders;
+    const container = document.getElementById('catalog-results');
+    if (!container) return;
 
-    document.getElementById('stat-revenue').textContent =
-        `€${summary.revenue.toFixed(2)}`;
+    container.innerHTML = 'Loading...';
 
-    document.getElementById('stat-average').textContent =
-        `€${summary.avgOrder.toFixed(2)}`;
+    try {
+        const res = await fetch(`/api/lv/dishes?name=${nameQuery}`);
+        const json = await res.json();
+
+        container.innerHTML = '';
+
+        json.data.forEach(d => {
+            container.appendChild(
+                renderDishRow(d, 'Importa', () => importDish(d._id))
+            );
+        });
+
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// =============================
+// IMPORT DISH
+// =============================
+async function importDish(id) {
+    console.log("Import dish", id);
+}
+
+// =============================
+// UTILS
+// =============================
+function debounce(fn, delay = 300) {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), delay);
+    };
 }
 
 function renderOrdersChart(data) {
@@ -733,7 +650,6 @@ function renderOrdersChart(data) {
 
     new Chart(ctx, {
         type: 'line',
-
         data: {
             labels: labels,
             datasets: [{
@@ -742,13 +658,10 @@ function renderOrdersChart(data) {
                 tension: 0.3
             }]
         },
-
         options: {
             responsive: true,
             plugins: {
-                legend: {
-                    display: false
-                }
+                legend: { display: false }
             }
         }
     });
@@ -762,9 +675,7 @@ function renderTopDishesChart(data) {
     const ctx = document.getElementById('topDishesChart');
 
     new Chart(ctx, {
-
         type: 'bar',
-
         data: {
             labels: labels,
             datasets: [{
@@ -772,11 +683,9 @@ function renderTopDishesChart(data) {
                 data: values
             }]
         },
-
         options: {
             responsive: true,
             indexAxis: 'y'
         }
-
     });
 }
