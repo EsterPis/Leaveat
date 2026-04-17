@@ -9,12 +9,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Gestione Logout
-    document.getElementById('logout-btn').addEventListener('click', () => {
-        localStorage.removeItem('token');
-        window.location.href = 'index.html';
-    });
-
     // 2. Fetch dei dati dal Backend
     try {
         const response = await fetch('/api/lv/restaurants/my-restaurants', {

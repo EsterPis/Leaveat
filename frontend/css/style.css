@@ -1,0 +1,47 @@
+/* Navbar default (customer + visitor) */
+.navbar.navbar-default {
+    background-color: #185493 !important;
+}
+
+/* Navbar ristoratore */
+.navbar.navbar-restaurateur {
+    background-color: #ee1d23 !important;
+}
+
+/* Bottoni navbar default */
+.navbar-default .btn-outline-light {
+    border-color: white;
+}
+
+.navbar-default .btn-outline-light:hover {
+    background-color: white;
+    color: #185493 !important;
+}
+
+/* Link e brand */
+.navbar-default .navbar-brand,
+.navbar-default .nav-link {
+    color: white !important;
+}
+
+/* Navbar ristoratore */
+.navbar-restaurateur {
+    background-color: #ee1d23 !important;
+}
+
+/* Hover e interazioni */
+.navbar-restaurateur .navbar-brand,
+.navbar-restaurateur .nav-link,
+.navbar-restaurateur .btn {
+    color: white !important;
+}
+
+.navbar-restaurateur .btn-outline-light {
+    border-color: white;
+}
+
+.navbar-restaurateur .btn-outline-light:hover {
+    background-color: white;
+    color: #ee1d23 !important;
+}
+

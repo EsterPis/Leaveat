@@ -35,8 +35,8 @@ app.use(express.urlencoded({ extended: true })); //permette di leggere i dati da
 //Serve frontend static files
 app.use('/', express.static(path.join(__dirname, '../../frontend')));
 
-//----------------IMMAGINE PROVVISORIA MODIFICARE----------------
 app.use('/data', express.static(path.join(__dirname, '../../data'))); //permette di accedere alla cartella data per le immagini caricate
+app.use(express.static("frontend"));
 
 /* D → API ROUTES */
 app.use('/api/lv/users', authRoutes);
