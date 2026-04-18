@@ -67,13 +67,8 @@
                 <p class="mb-2"><strong><i class="bi bi-tag"></i> ID Catalogo:</strong></p>
                 <p id="dishId" class="text-muted small mb-4 font-monospace"></p>
 
-                <p class="mb-2"><strong><i class="bi bi-currency-euro"></i> Prezzo Consigliato:</strong></p>
+                <p class="mb-2"><strong><i class="bi bi-currency-euro"></i> Prezzo </strong></p>
                 <h3 id="dishPrice" class="text-success fw-bold"></h3>
-                <small class="text-muted d-block mb-4">Il prezzo può variare a discrezione del ristoratore.</small>
-
-                <div class="d-grid">
-                  <button onclick="window.close()" class="btn btn-outline-primary">Torna alla lista</button>
-                </div>
              </div>
           </div>
         </div>
@@ -93,7 +88,6 @@
       }
 
       try {
-        // Usa la tua API Dishes che hai già configurato in app.js
         // La rotta: app.use('/api/lv/dishes', dishRoutes) -> GET /:id
         const res = await fetch(`/api/lv/dishes/${dishId}`);
         const json = await res.json();
@@ -146,6 +140,6 @@
     });
   </script>
   <script type="module"> import { renderNavbar } from '/js/utils/navbar.js'; renderNavbar() </script>
-  <scipt src="/js/session.js"></scipt>
+  <script src="/js/session.js"></script>
 </body>
 </html>
