@@ -8,12 +8,14 @@
  */
 
 /* A → IMPORT MODULES */
-require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
-//console.log('MONGO_URI:', process.env.MONGO_URI); 
+require('../swagger');
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') }); 
 const express = require('express'); //middelware 
 const mongoose = require('mongoose'); //interfaccia con mongoDB
 const cors = require('cors'); //permette al frontend di comunicare con il backend senza blocchi di sicurezza
 const path = require('path'); //gestione dei percorsi
+const swaggerUi = require('swagger-ui-express'); //per la documentazione API
+const swaggerDocument = require('./swagger-output.json'); //documentazione generata da swagger-autogen
 
 /* B → IMPORT MIDDLEWARE AND ROUTES */
 const { importMealsIfEmpty } = require('./utils/catalogSeeder');
@@ -34,9 +36,11 @@ app.use(express.urlencoded({ extended: true })); //permette di leggere i dati da
 
 //Serve frontend static files
 app.use('/', express.static(path.join(__dirname, '../../frontend')));
-
 app.use('/data', express.static(path.join(__dirname, '../../data'))); //permette di accedere alla cartella data per le immagini caricate
 app.use(express.static("frontend"));
+
+// Serve Swagger UI
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 /* D → API ROUTES */
 app.use('/api/lv/users', authRoutes);
