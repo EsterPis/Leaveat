@@ -8,12 +8,16 @@
  * PUT /api/lv/users/me/password
  * DELETE /api/lv/users/me
  */
+
+/* A → IMPORT */
 const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
+
 //middleware
 const { authMiddleware } = require('../middleware/auth');
+
 //models
 const User = require('../models/User');
 const Customer = require('../models/Customer');
@@ -23,6 +27,8 @@ const Menu = require('../models/Menu');
 const Order = require('../models/Order');
 const Dish = require('../models/Dish');
 
+/* B → UTILITYFUNCTIONS */
+//Crea token JWT
 function signToken(user) {
     const payload = {
         id: user._id.toString(),
@@ -34,6 +40,42 @@ function signToken(user) {
     return jwt.sign(payload, secret, { expiresIn: '24h' });
 }
 
+/* C → ROUTES */
+//POST /api/lv/users/register
+/*
+    #swagger.tags = ['Auth']
+    #swagger.summary = 'User registration'
+    #swagger.description = 'Creates a new user account. Role can be CUSTOMER or RESTAURATEUR (default CUSTOMER).'
+
+    #swagger.parameters['body'] = { 
+        in: 'body',
+        description: 'User registration data',
+        required: true,
+        schema: {
+            firstName: 'Mario',
+            lastName: 'Rossi',
+            email: 'mario.rossi@example.com',
+            phoneNumber: '1234567890',
+            password: 'password123',
+            role: 'CUSTOMER'
+        }
+    }
+    #swagger.responses[201] = { 
+        description: 'Registrazione avvenuta con successo'
+        schema: {
+            success: true,
+            data: {
+                token: 'jwt_token',
+                userId: 'user_id',
+                role: 'CUSTOMER'
+            }
+        }
+            }
+    }
+    #swagger.responses[400] = { description: 'Invalid or incomplete data' }
+    #swagger.responses[409] = { description: 'Email or phone number already registered' }
+    #swagger.responses[500] = { description: 'Server error' }
+*/
 router.post('/register', async (req, res) => {
     try {
         const { firstName, lastName, email, phoneNumber, password, role } = req.body;
@@ -66,6 +108,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
+//POST /api/lv/users/login
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
