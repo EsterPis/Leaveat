@@ -247,6 +247,49 @@ router.get('/me', authMiddleware, async (req, res) => {
     }
 });
 
+// PUT /api/lv/users/me
+/*
+   #swagger.tags = ['Auth']
+    #swagger.summary = 'Update user profile'
+    #swagger.description = 'Update user profile information. Email, password and role cannot be updated with this endpoint.'
+    
+    #swagger.security = [{
+        "bearerAuth": []
+    }]
+    
+    #swagger.parameters['body'] = {
+        in: 'body',
+        description: 'User profile data to update',
+        required: true,
+        schema: {
+            firstName: 'Mario',
+            lastName: 'Rossi',
+            phoneNumber: '1234567890'
+        }
+    }
+    
+    #swagger.responses[200] = {
+        description: 'Profile updated successfully',
+        schema: {
+            success: true,
+            user: {
+                _id: 'user_id',
+                email: 'mario.rossi@example.com',
+                firstName: 'Mario',
+                lastName: 'Rossi',
+                role: 'CUSTOMER'
+            }
+        }
+    }
+
+    #swagger.responses[401] = {
+        description: 'Unauthorized - Invalid or missing token'
+    }
+
+    #swagger.responses[500] = {
+        description: 'Internal server error'
+    }
+*/
 router.put('/me', authMiddleware, async (req, res) => {
     try {
         const updates = req.body; // { firstName, lastName, phoneNumber ... }
@@ -264,7 +307,51 @@ router.put('/me', authMiddleware, async (req, res) => {
 });
 
 // PUT /api/lv/users/me/email
-// Allow user to update email with uniqueness check
+/*   #swagger.tags = ['Auth']
+    #swagger.summary = 'Update user email'
+    #swagger.description = 'Update the email address of the authenticated user.'
+    #swagger.security = [{
+        "bearerAuth": []
+    }] 
+    #swagger.parameters['body'] = {
+        in: 'body',
+        description: 'New email address',
+        required: true,
+        schema: {
+            email: 'mario.rossi@example.com'
+        }
+    }
+    
+    #swagger.responses[200] = {
+        description: 'Email updated successfully',
+        schema: {
+            success: true,
+            user: {
+                _id: 'user_id',
+                email: 'mario.rossi@example.com',
+                firstName: 'Mario',
+                lastName: 'Rossi',
+                role: 'CUSTOMER'
+            }
+        }
+    }
+
+    #swagger.responses[400] = {
+        description: 'Bad request - Invalid data provided'
+    }
+
+    #swagger.responses[401] = {
+        description: 'Unauthorized - Invalid or missing token'
+    }
+
+    #swagger.responses[409] = {
+        description: 'Conflict - Email already in use'
+    }
+
+    #swagger.responses[500] = {
+        description: 'Internal server error'
+    }
+*/
 router.put('/me/email', authMiddleware, async (req, res) => {
     try {
 
@@ -308,6 +395,42 @@ router.put('/me/email', authMiddleware, async (req, res) => {
 });
 
 // PUT /api/lv/users/me/password
+/*   #swagger.tags = ['Auth']
+    #swagger.summary = 'Update user password'
+    #swagger.description = 'Update the password of the authenticated user. Requires current password for verification.'
+    #swagger.security = [{
+        "bearerAuth": []
+    }]
+    #swagger.parameters['body'] = {
+        in: 'body',
+        description: 'Current and new password',
+        required: true,
+        schema: {
+            currentPassword: 'current_password123',
+            newPassword: 'new_secure_password456'
+        }
+    }
+    
+    #swagger.responses[200] = {
+        description: 'Password updated successfully',
+        schema: { 
+            success: true,
+            message: 'Password aggiornata'
+        }
+    }
+
+    #swagger.responses[400] = {
+        description: 'Bad request - Missing or invalid data'
+    }
+
+    #swagger.responses[401] = {
+        description: 'Unauthorized - Invalid or missing token'
+    }
+
+    #swagger.responses[500] = {
+        description: 'Internal server error'
+    }
+*/
 router.put('/me/password', authMiddleware, async (req, res) => {
     try {
 
@@ -355,6 +478,31 @@ router.put('/me/password', authMiddleware, async (req, res) => {
 });
 
 // DELETE /api/lv/users/me
+/*
+    #swagger.tags = ['Auth']
+    #swagger.summary = 'Delete user account'
+    #swagger.description = 'Deletes the authenticated user account and all related data (customer profile, restaurateur profile, restaurants, menus, orders, etc.). This action is irreversible.'
+    #swagger.security = [{
+        "bearerAuth": []
+    }]
+    
+    #swagger.responses[200] = {
+        description: 'Account deleted successfully',
+        schema: {
+            success: true,
+            message: 'Account deleted successfully'
+        }
+    }
+    #swagger.responses[401] = {
+        description: 'Unauthorized - Invalid or missing token'
+    }
+    #swagger.responses[404] = {
+        description: 'User not found'
+    }
+    #swagger.responses[500] = {
+        description: 'Internal server error'
+    }
+*/
 router.delete('/me', authMiddleware, async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -384,7 +532,7 @@ router.delete('/me', authMiddleware, async (req, res) => {
 
             if (restaurateur) {
 
-                // Trova risporanti
+                // Trova ristoranti
                 const restaurants = await Restaurant.find({
                     restaurateurId: restaurateur._id
                 }).session(session);

@@ -8,23 +8,21 @@ const doc = {
   host: 'localhost:3005',
   schemes: ['http'],
 
-  components: {
-    securitySchemes: {
-      bearerAuth: {
-        type: "http",
-        scheme: "bearer",
-        bearerFormat: "JWT"
-      }
+  securityDefinitions: {
+    bearerAuth: {
+      type: "apiKey",
+      name: "Authorization",
+      in: "header"
     }
   }
 };
 
-    const outputFile = './backend/swagger-output.json';
-    const endpointsFiles = [
-      './backend/src/app.js',
-      './backend/src/routes/auth.js'
-    ];
+const outputFile = './backend/swagger-output.json';
+const endpointsFiles = [
+  './backend/src/app.js',
+  './backend/src/routes/auth.js'
+];
 
 
 
-    swaggerAutogen(outputFile, endpointsFiles, doc);
+swaggerAutogen(outputFile, endpointsFiles, doc);
