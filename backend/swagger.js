@@ -5,12 +5,14 @@ const doc = {
     title: 'Leaveat API',
     description: 'Documentazione API del progetto Leaveat'
   },
-  host: 'localhost:3000',
+  host: 'localhost:3005',
   schemes: ['http']
 };
 
-const outputFile = './swagger-output.json';
-const path = require('path');
-const endpointsFiles = [path.join(__dirname, 'src', 'app.js')];
+const outputFile = './backend/swagger-output.json';
+const endpointsFiles = [
+  './backend/src/app.js',
+  './backend/src/routes/auth.js'
+];
 
 swaggerAutogen(outputFile, endpointsFiles, doc);

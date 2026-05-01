@@ -15,7 +15,7 @@ const mongoose = require('mongoose'); //interfaccia con mongoDB
 const cors = require('cors'); //permette al frontend di comunicare con il backend senza blocchi di sicurezza
 const path = require('path'); //gestione dei percorsi
 const swaggerUi = require('swagger-ui-express'); //per la documentazione API
-const swaggerDocument = require('./swagger-output.json'); //documentazione generata da swagger-autogen
+const swaggerDocument = require('../swagger-output.json'); //documentazione generata da swagger-autogen
 
 /* B → IMPORT MIDDLEWARE AND ROUTES */
 const { importMealsIfEmpty } = require('./utils/catalogSeeder');
