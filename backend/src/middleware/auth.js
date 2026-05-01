@@ -7,9 +7,10 @@ const jwt = require('jsonwebtoken'); //modulo per la decodifica e verifica dei t
  * If valid, attaches standardized user object to req.user.
  */
 function authMiddleware(req, res, next) {
-  const header = req.headers['authorization'] || '';
+  const header = req.headers['authorization'] || ''; //lettura dell'header
   const [scheme, token] = header.split(' ');
 
+  // Check for Bearer token
   if (scheme !== 'Bearer' || !token) {
     return res.status(401).json({
       success: false,
@@ -18,16 +19,14 @@ function authMiddleware(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Standardize req.user
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); //contollo firma e scadenza
+    //Popolamento req.user
     req.user = {
       id: decoded.id,
       email: decoded.email,
       role: decoded.role
     };
-
-    next();
+    next(); //passa alla route handler
   } catch (err) {
     return res.status(401).json({
       success: false,

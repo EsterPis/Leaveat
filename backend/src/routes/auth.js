@@ -61,7 +61,7 @@ function signToken(user) {
         }
     }
     #swagger.responses[201] = { 
-        description: 'Registrazione avvenuta con successo'
+        description: 'Registration successful',
         schema: {
             success: true,
             data: {
@@ -109,11 +109,40 @@ router.post('/register', async (req, res) => {
 });
 
 //POST /api/lv/users/login
+/*
+    #swagger.tags = ['Auth']
+    #swagger.summary = 'User login'
+    #swagger.description = 'Authenticate user and return JWT token.'
+
+    #swagger.parameters['body'] = {
+        in: 'body',
+        description: 'User login data',
+        required: true,
+        schema: {
+            email: 'mario.rossi@example.com',
+            password: 'password123'
+        }
+    }
+
+    #swagger.responses[200] = {
+        description: 'Login successful',
+        schema: {
+            success: 'true',
+            data: {
+                token: 'jwt_token',
+                userId: 'user_id',
+                role: 'CUSTOMER'
+            }
+        }
+    }
+    #swagger.responses[401] = { description: 'Invalid credentials' }
+    #swagger.responses[500] = { description: 'Server error' }
+*/
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        const user = await User.findOne({ email }).select('+password');
+        const user = await User.findOne({ email }).select('+password'); //Nel modello dati la password è impostata come celect: false per motivi di sicurezza. 
         if (!user)
             return res.status(401).json({ success: false, message: 'Utente non trovato' });
 
@@ -141,10 +170,46 @@ router.post('/login', async (req, res) => {
     }
 });
 
+//GET /api/lv/users/me
+/* #swagger.tags = ['Auth']
+   #swagger.summary = 'Profilo utente autenticato'
+   #swagger.description = 'Restituisce i dati dell’utente autenticato e il relativo profilo (Customer o Restaurateur)'
 
+   #swagger.security = [{
+        "bearerAuth": []
+   }]
+
+   #swagger.responses[200] = {
+        description: 'Profilo recuperato con successo',
+        schema: {
+            success: true,
+            user: {
+                _id: 'user_id',
+                email: 'mario.rossi@example.com',
+                firstName: 'Mario',
+                lastName: 'Rossi',
+                role: 'CUSTOMER'
+            },
+            profile: {
+                // struttura variabile in base al ruolo
+            }
+        }
+   }
+
+   #swagger.responses[401] = {
+        description: 'Token mancante o non valido'
+   }
+
+   #swagger.responses[404] = {
+        description: 'Utente non trovato'
+   }
+
+   #swagger.responses[500] = {
+        description: 'Errore interno del server'
+   }
+*/
 router.get('/me', authMiddleware, async (req, res) => {
     try {
-
         const user = await User
             .findById(req.user.id)
             .select('-password');
@@ -155,21 +220,17 @@ router.get('/me', authMiddleware, async (req, res) => {
                 message: 'Utente non trovato'
             });
 
+
         let profile = null;
-
         if (user.role === 'CUSTOMER') {
-
             profile = await Customer
                 .findOne({ userId: user._id })
                 .populate('preferences.favoriteRestaurantIds', 'displayName imageUrl address');
-
         }
 
         if (user.role === 'RESTAURATEUR') {
-
             profile = await Restaurateur
                 .findOne({ userId: user._id });
-
         }
 
         res.json({
@@ -177,16 +238,12 @@ router.get('/me', authMiddleware, async (req, res) => {
             user,
             profile
         });
-
-
     } catch (err) {
-
         return res.status(500).json({
             success: false,
             message: 'Errore server',
             error: err.message
         });
-
     }
 });
 
