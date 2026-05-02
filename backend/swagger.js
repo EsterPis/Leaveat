@@ -20,7 +20,14 @@ const doc = {
 const outputFile = './backend/swagger-output.json';
 const endpointsFiles = [
   './backend/src/app.js',
-  './backend/src/routes/auth.js'
+  './backend/src/routes/auth.js',
+  './backend/src/routes/categories.js',
+  './backend/src/routes/customers.js',
+  './backend/src/routes/restaurateurs.js',
+  './backend/src/routes/restaurants.js',
+  './backend/src/routes/statistics.js',
+  './backend/src/routes/dishes.js',
+  './backend/src/routes/orders.js'
 ];
 
 

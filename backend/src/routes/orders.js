@@ -513,6 +513,9 @@ router.get('/my-orders', authMiddleware, requireRole('CUSTOMER'), async (req, re
   #swagger.responses[403] = {
       description: 'Unauthorized order access'
   }
+  #swagger.responses[404] = {
+      description: 'Order not found'
+  }
   #swagger.responses[500] = {
       description: 'Server error'
   }
