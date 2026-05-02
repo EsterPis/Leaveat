@@ -28,7 +28,69 @@ async function verifyRestaurantOwnership(userId, restaurantId) {
 
 /* B → CUSTOMER ORDER CREATION */
 // POST /api/lv/orders
-// Creates a new order from customer cart
+/* #swagger.tags = ['Orders']
+   #swagger.summary = 'Create order from cart'
+   #swagger.description = 'Creates a new order for the authenticated customer.'
+
+   #swagger.security = [{
+        "bearerAuth": []
+   }]
+
+   #swagger.parameters['body'] = {
+        in: 'body',
+        description: 'Dati ordine',
+        required: true,
+        schema: {
+            restaurantId: 'restaurant_id',
+            items: [
+                {
+                    dishId: 'dish_id',
+                    quantity: 2
+                }
+            ]
+        }
+   }
+
+   #swagger.responses[201] = {
+        description: 'Ordine creato con successo',
+        schema: {
+            success: true,
+            data: {
+                _id: 'order_id',
+                customerId: 'user_id',
+                restaurantId: 'restaurant_id',
+                items: [
+                    {
+                        dishId: 'dish_id',
+                        quantity: 2
+                    }
+                ],
+                totalPrice: 25.50,
+                status: 'ORDINATO'
+            }
+        }
+   }
+
+   #swagger.responses[400] = {
+        description: 'Invalid input data (empty cart, invalid quantity, invalid dish)'
+   }
+
+   #swagger.responses[401] = {
+        description: 'Authentication required'
+   }
+
+   #swagger.responses[403] = {
+        description: 'Unauthorized access (only CUSTOMER)'
+   }
+
+   #swagger.responses[404] = {
+        description: 'Restaurant or dish not found'
+   }
+
+   #swagger.responses[500] = {
+        description: 'Internal server error'
+   }
+*/
 router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
 
   const session = await mongoose.startSession();
@@ -36,10 +98,9 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
 
   try {
 
+    /* 1. VALIDAZIONE INPUT E PREPARAZIONE DATI */
     const customerId = req.user.id;
     const { restaurantId, items } = req.body;
-
-    /* ---------------- VALIDAZIONI BASE ---------------- */
 
     if (!restaurantId) {
       return res.status(400).json({
@@ -55,6 +116,7 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
       });
     }
 
+    //Se il ristorante non trova ricontro nel db blocca l'ordine
     const restaurant = await Restaurant.findById(restaurantId).session(session);
     if (!restaurant) {
       return res.status(404).json({
@@ -63,13 +125,12 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
       });
     }
 
+    //inizio creazione ordine
     let totalPrice = 0;
     const orderItems = [];
 
-    /* ---------------- CONTROLLO PIATTI ---------------- */
-
     for (const item of items) {
-
+      //verifico che ogni item abbia un dishId valido e che il piatto appartenga al ristorante selezionato
       if (!item.dishId) {
         return res.status(400).json({
           success: false,
@@ -78,7 +139,6 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
       }
 
       const dish = await Dish.findById(item.dishId).session(session);
-
       if (!dish) {
         return res.status(404).json({
           success: false,
@@ -86,7 +146,6 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
         });
       }
 
-      // Ensure dish belongs to selected restaurant
       if (dish.restaurantId?.toString() !== restaurantId) {
         return res.status(400).json({
           success: false,
@@ -94,8 +153,9 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
         });
       }
 
-      const quantity = item.quantity || 1;
+      const quantity = item.quantity || 1; //assegno quantità, default 1 se non specificata
 
+      //controllo sulla quantità
       if (quantity <= 0) {
         return res.status(400).json({
           success: false,
@@ -103,16 +163,16 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
         });
       }
 
-      totalPrice += dish.price * quantity;
+      totalPrice += dish.price * quantity; //calcolo del prezzo totale
 
+      //preparazione dell'array da salvare nell'ordine
       orderItems.push({
         dishId: dish._id,
         quantity
       });
     }
 
-    /* ---------------- CREAZIONE ORDINE ---------------- */
-
+    /* 2. CREAZIONE ORDINE */
     const newOrder = new Order({
       customerId,
       restaurantId,
@@ -122,8 +182,7 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
     });
 
     await newOrder.save({ session });
-
-    await session.commitTransaction();
+    await session.commitTransaction(); //Scrittura effettiva dell'ordine sul db
     session.endSession();
 
     return res.status(201).json({
@@ -145,10 +204,45 @@ router.post('/', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
     });
   }
 });
+
 /* C → RESTAURATEUR ORDER MANAGEMENT */
 
 // GET /api/lv/orders/restaurant/:restaurantId
-// Returns orders for a specific restaurant (dashboard)
+/* #swagger.tags = ['Orders']
+   #swagger.summary = 'Get orders for restaurant'
+   #swagger.description = 'Gets all orders associated with a restaurant, accessible only to the owner.'
+
+   #swagger.security = [{
+        "bearerAuth": []
+   }]
+
+   #swagger.parameters['restaurantId'] = {
+        in: 'path',
+        description: 'ID del ristorante',
+        required: true,
+        type: 'string'
+   }
+
+   #swagger.responses[200] = {
+        description: 'Lista ordini',
+        schema: {
+            success: true,
+            data: []
+        }
+   }
+
+   #swagger.responses[401] = {
+        description: 'Authentication required'
+   }
+
+   #swagger.responses[403] = {
+        description: 'Unauthorized restaurant access'
+   }
+
+   #swagger.responses[500] = {
+        description: 'Server error'
+   }
+*/
 router.get('/restaurant/:restaurantId', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
   try {
     const { restaurantId } = req.params;
@@ -178,7 +272,53 @@ router.get('/restaurant/:restaurantId', authMiddleware, requireRole('RESTAURATEU
 
 
 // PATCH /api/lv/orders/:id/status
-// Updates order status (restaurateur only)
+/* #swagger.tags = ['Orders']
+   #swagger.summary = 'Update order status'
+   #swagger.description = 'Allows restaurateur to update the status of an order.'
+
+   #swagger.security = [{
+        "bearerAuth": []
+   }]
+
+   #swagger.parameters['id'] = {
+        in: 'path',
+        required: true,
+        type: 'string',
+        description: 'ID ordine'
+   }
+
+   #swagger.parameters['body'] = {
+        in: 'body',
+        required: true,
+        schema: {
+            status: 'IN_PREPARAZIONE'
+        }
+   }
+
+   #swagger.responses[200] = {
+        description: 'Order status updated'
+   }
+
+   #swagger.responses[400] = {
+        description: 'Invalid transition or status'
+   }
+
+   #swagger.responses[401] = {
+        description: 'Authentication required'
+   }
+
+   #swagger.responses[403] = {
+        description: 'Unauthorized order update'
+   }
+
+   #swagger.responses[404] = {
+        description: 'Order not found'
+   }
+
+   #swagger.responses[500] = {
+        description: 'Server error'
+   }
+*/
 router.patch('/:id/status', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -246,7 +386,56 @@ router.patch('/:id/status', authMiddleware, requireRole('RESTAURATEUR'), async (
 /* D → CUSTOMER ORDER HISTORY */
 
 // GET /api/lv/orders/my-orders
-// Returns logged customer order history
+/* #swagger.tags = ['Orders']
+   #swagger.summary = 'Customer order history'
+   #swagger.description = 'Shows the authenticated customer their order history with details and estimated wait times.'
+
+    #swagger.security = [{
+        "bearerAuth": []
+    }]
+
+   #swagger.responses[200] = {
+        description: 'Lista ordini del cliente',
+        schema: {
+            success: true,
+            data: [
+                {
+                    _id: 'order_id',
+                    restaurantId: {
+                        _id: 'restaurant_id',
+                        displayName: 'Nome Ristorante',
+                        address: 'Indirizzo',
+                        imageUrl: 'url_immagine'
+                    },
+                    items: [
+                        {
+                            dishId: {
+                                _id: 'dish_id',
+                                name: 'Nome Piatto',
+                                price: 12.50,
+                                image: 'url_immagine',
+                                prepTime: 15
+                            },
+                            quantity: 2
+                        }
+                    ],
+                    totalPrice: 25.50,
+                    status: 'ORDINATO',
+                    estimatedWaitTime: 30
+                }
+            ]
+        }
+    }
+    #swagger.responses[401] = {
+        description: 'Authentication required'
+    }
+    #swagger.responses[403] = {
+        description: 'Unauthorized order access'
+    } 
+    #swagger.responses[500] = {
+        description: 'Server error'
+    }
+*/
 router.get('/my-orders', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
   try {
 
@@ -260,8 +449,8 @@ router.get('/my-orders', authMiddleware, requireRole('CUSTOMER'), async (req, re
         select: 'name price image prepTime'
       });
 
+    // ordine → calcolo tempo di attesa → restituzione ordine aggiornato
     const ordersWithPrepTime = await Promise.all(orders.map(async (order) => {
-
       const pendingOrders = await Order.find({
         restaurantId: order.restaurantId._id,
         status: { $in: ['ORDINATO', 'IN_PREPARAZIONE'] },
@@ -299,7 +488,35 @@ router.get('/my-orders', authMiddleware, requireRole('CUSTOMER'), async (req, re
 });
 
 // PATCH /api/lv/orders/:id/cancel
-// Allows customer to cancel an order only if status is ORDINATO
+/* #swagger.tags = ['Orders']
+   #swagger.summary = 'Cancel order'
+   #swagger.description = 'Allows a customer to cancel their order if it has not yet been prepared.'
+
+  #swagger.security = [{
+      "bearerAuth": []
+  }]  
+  #swagger.parameters['id'] = {
+      in: 'path',
+      required: true,
+      type: 'string',
+      description: 'ID ordine da cancellare'
+  }   
+  #swagger.responses[200] = {
+      description: 'Order cancelled successfully'
+  }
+  #swagger.responses[400] = {
+      description: 'Order cannot be cancelled at this stage'
+  }
+  #swagger.responses[401] = {
+      description: 'Authentication required'
+  }
+  #swagger.responses[403] = {
+      description: 'Unauthorized order access'
+  }
+  #swagger.responses[500] = {
+      description: 'Server error'
+  }
+*/
 router.patch('/:id/cancel', authMiddleware, requireRole('CUSTOMER'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -314,7 +531,6 @@ router.patch('/:id/cancel', authMiddleware, requireRole('CUSTOMER'), async (req,
       });
     }
 
-    // Ensure order belongs to logged customer
     if (order.customerId.toString() !== customerId) {
       return res.status(403).json({
         success: false,
