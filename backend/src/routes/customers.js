@@ -7,25 +7,37 @@ const Customer = require('../models/Customer');
 
 // PUT /api/lv/customers
 /* #swagger.tags = ['Customers']
-   #swagger.description = 'Aggiorna il profilo cliente collegato all'utente'
+   #swagger.summary = 'Aggiornamento profilo cliente'
+   #swagger.description = 'Aggiorna le informazioni del profilo cliente associato all’utente autenticato.'
+
+   #swagger.security = [{
+      "bearerAuth": []
+   }]
+
    #swagger.parameters['body'] = {
      in: 'body',
-     description: 'Dati del profilo cliente',
+     description: 'Dati del profilo cliente (campi opzionali)',
      required: true,
      schema: {
-       type: 'object',
-       properties: {
-         preferences: {
-           type: 'array',
-           items: {
-             type: 'string'
-           }
-         },
-         paymentMethod: {
-           type: 'string'
-         }
-       }
+       preferences: ['Pizza', 'Sushi'],
+       paymentMethod: 'Credit Card'
      }
+   }
+
+   #swagger.responses[200] = {
+     description: 'Profilo aggiornato con successo'
+   }
+
+   #swagger.responses[401] = {
+     description: 'Non autenticato'
+   }
+
+   #swagger.responses[404] = {
+     description: 'Profilo cliente non trovato'
+   }
+
+   #swagger.responses[500] = {
+     description: 'Errore server'
    }
 */
 router.put('/me', authMiddleware, async (req, res) => {

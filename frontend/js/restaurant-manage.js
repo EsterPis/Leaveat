@@ -6,7 +6,7 @@ import { renderDishRow } from "./utils/ui-components.js";
 const urlParams = new URLSearchParams(window.location.search);
 const restaurantId = urlParams.get('id');
 const token = localStorage.getItem('token');
-
+let selectedDishId = null;
 // =============================
 // INIT
 // =============================
@@ -20,6 +20,7 @@ function initPage() {
     bindStaticEvents();
     bindCatalogFilters();
     bindAddDishForm();
+    bindImportModal();
 
     loadInitialData();
 }
@@ -628,6 +629,61 @@ async function loadCatalogList(nameQuery = '') {
 // =============================
 async function importDish(id) {
     console.log("Import dish", id);
+        selectedDishId = id;
+
+    const modal = new bootstrap.Modal(
+        document.getElementById('importDishModal')
+    );
+
+    modal.show();
+}
+
+function bindImportModal() {
+    const btn = document.getElementById('confirm-import-btn');
+
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+
+        const price = document.getElementById('import-price').value;
+        const prepTime = document.getElementById('import-preptime').value;
+
+        if (!price) {
+            alert("Inserisci il prezzo");
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/lv/dishes/import`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    catalogDishId: selectedDishId,
+                    restaurantId,
+                    price: parseFloat(price),
+                    prepTime: prepTime ? parseInt(prepTime) : 15
+                })
+            });
+
+            if (response.ok) {
+                const modal = bootstrap.Modal.getInstance(
+                    document.getElementById('importDishModal')
+                );
+
+                modal.hide();
+
+                loadRestaurantDetails();
+            } else {
+                alert("Errore import");
+            }
+
+        } catch (err) {
+            console.error(err);
+        }
+    });
 }
 
 // =============================

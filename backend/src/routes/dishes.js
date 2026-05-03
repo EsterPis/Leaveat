@@ -6,12 +6,33 @@ const Dish = require('../models/Dish');
 const Restaurateur = require('../models/Restaurateur');
 const Restaurant = require('../models/Restaurant');
 const Menu = require('../models/Menu');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, requireRole } = require('../middleware/auth');
 
 
 /* A → UTILITY FUNCTIONS */
+/* #swagger.tags = ['Dishes']
+   #swagger.summary = 'Catalogo piatti'
+   #swagger.description = 'Restituisce i piatti filtrabili tramite query parameters.'
 
-// Verifies that the authenticated restaurateur owns the given restaurant
+   #swagger.parameters['name'] = { in: 'query', type: 'string' }
+   #swagger.parameters['category'] = { in: 'query', type: 'string' }
+   #swagger.parameters['maxPrice'] = { in: 'query', type: 'number' }
+   #swagger.parameters['ingredient'] = { in: 'query', type: 'string' }
+   #swagger.parameters['dishIds'] = { in: 'query', type: 'string' }
+   #swagger.parameters['source'] = { in: 'query', type: 'string' }
+
+   #swagger.responses[200] = {
+        description: 'Lista piatti',
+        schema: {
+            success: true,
+            data: []
+        }
+   }
+
+   #swagger.responses[500] = {
+        description: 'Errore server'
+   }
+*/
 async function verifyOwnership(userId, restaurantId) {
   const restaurateur = await Restaurateur.findOne({ userId });
   if (!restaurateur) return false;
@@ -26,6 +47,45 @@ async function verifyOwnership(userId, restaurantId) {
 
 
 /* B → PUBLIC CATALOG ROUTES */
+/* #swagger.tags = ['Dishes']
+   #swagger.summary = 'Creazione piatto'
+   #swagger.description = 'Permette al ristoratore di creare un nuovo piatto e aggiungerlo al menu del ristorante.'
+
+   #swagger.security = [{
+      "bearerAuth": []
+   }]
+
+   #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+         restaurantId: 'restaurant_id',
+         name: 'Pizza Margherita',
+         price: 10,
+         category: 'Pizza'
+      }
+   }
+
+   #swagger.responses[201] = {
+      description: 'Piatto creato'
+   }
+
+   #swagger.responses[400] = {
+      description: 'Errore richiesta'
+   }
+
+   #swagger.responses[401] = {
+      description: 'Non autenticato'
+   }
+
+   #swagger.responses[403] = {
+      description: 'Accesso negato'
+   }
+
+   #swagger.responses[500] = {
+      description: 'Errore server'
+   }
+*/
 router.get('/', async (req, res) => {
   try {
     const { name, category, maxPrice, ingredient, dishIds, source } = req.query;
@@ -44,7 +104,7 @@ router.get('/', async (req, res) => {
 
     // Nome
     if (name) {
-      filter.name = { $regex: name, $options: 'i' };
+      filter.name = { $regex: name, $options: 'i' }; //case insensitive
     }
 
     // Categoria
@@ -84,15 +144,15 @@ router.get('/', async (req, res) => {
 
 // POST /api/lv/dishes
 // Creates a new custom dish and adds it to the restaurant menu
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    if (req.user.role !== 'RESTAURATEUR') {
+    /*if (req.user.role !== 'RESTAURATEUR') {
       throw new Error('Access denied');
-    }
+    }*/
 
     const { restaurantId } = req.body;
     if (!restaurantId) {
@@ -107,7 +167,7 @@ router.post('/', authMiddleware, async (req, res) => {
     const restaurant = await Restaurant.findById(restaurantId).session(session);
 
     const newDish = new Dish({
-      ...req.body,
+      ...req.body, //spread operator
       restaurantId,
       source: 'restaurant'
     });
@@ -120,9 +180,8 @@ router.post('/', authMiddleware, async (req, res) => {
       { session }
     );
 
-    // Verifico se il menu ora contiene almeno un piatto
-    const updatedMenu = await Menu.findById(restaurant.menuId).session(session);
 
+    const updatedMenu = await Menu.findById(restaurant.menuId).session(session);
     if (updatedMenu && updatedMenu.dishIds.length > 0) {
       await Restaurant.findByIdAndUpdate(
         restaurantId,
@@ -153,16 +212,58 @@ router.post('/', authMiddleware, async (req, res) => {
 
 
 // POST /api/lv/dishes/import
-// Imports a catalog dish into a specific restaurant
-router.post('/import', authMiddleware, async (req, res) => {
+/* #swagger.tags = ['Dishes']
+   #swagger.summary = 'Importa piatto dal catalogo'
+   #swagger.description = 'Duplica un piatto del catalogo globale e lo associa al menu del ristorante.'
+
+   #swagger.security = [{
+      "bearerAuth": []
+   }]
+
+   #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+         catalogDishId: 'dish_id',
+         restaurantId: 'restaurant_id',
+         price: 12,
+         prepTime: 15
+      }
+   }
+
+   #swagger.responses[201] = {
+      description: 'Piatto importato con successo'
+   }
+
+   #swagger.responses[400] = {
+      description: 'Errore richiesta'
+   }
+
+   #swagger.responses[401] = {
+      description: 'Non autenticato'
+   }
+
+   #swagger.responses[403] = {
+      description: 'Accesso negato'
+   }
+
+   #swagger.responses[404] = {
+      description: 'Piatto catalogo non trovato'
+   }
+
+   #swagger.responses[500] = {
+      description: 'Errore server'
+   }
+*/
+router.post('/import', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    if (req.user.role !== 'RESTAURATEUR') {
-      throw new Error('Access denied');
-    }
+    /* if (req.user.role !== 'RESTAURATEUR') {
+       throw new Error('Access denied');
+     }*/
 
     const { catalogDishId, price, restaurantId, prepTime } = req.body;
 
@@ -261,8 +362,55 @@ router.get('/:id', async (req, res) => {
 
 
 // PUT /api/lv/dishes/:id
-// Updates a restaurant-owned dish
-router.put('/:id', authMiddleware, async (req, res) => {
+/* #swagger.tags = ['Dishes']
+   #swagger.summary = 'Aggiorna piatto'
+
+   #swagger.security = [{
+      "bearerAuth": []
+   }]
+
+   #swagger.parameters['id'] = {
+      in: 'path',
+      required: true,
+      type: 'string',
+      description: 'ID del piatto'
+   }
+
+   #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+         name: 'Pizza',
+         price: 10,
+         category: 'Pizza'
+      }
+   }
+
+   #swagger.responses[200] = {
+      description: 'Piatto aggiornato'
+   }
+
+   #swagger.responses[400] = {
+      description: 'Dati non validi'
+   }
+
+   #swagger.responses[401] = {
+      description: 'Non autenticato'
+   }
+
+   #swagger.responses[403] = {
+      description: 'Accesso negato'
+   }
+
+   #swagger.responses[404] = {
+      description: 'Piatto non trovato'
+   }
+
+   #swagger.responses[500] = {
+      description: 'Errore server'
+   }
+*/
+router.put('/:id', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
   try {
     const dish = await Dish.findById(req.params.id);
 
@@ -305,7 +453,46 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
 // DELETE /api/lv/dishes/:id
 // Deletes a restaurant-owned dish
-router.delete('/:id', authMiddleware, async (req, res) => {
+/* #swagger.tags = ['Dishes']
+   #swagger.summary = 'Elimina piatto'
+
+   #swagger.security = [{
+      "bearerAuth": []
+   }]
+
+   #swagger.parameters['id'] = {
+      in: 'path',
+      required: true,
+      type: 'string',
+      description: 'ID del piatto'
+   }
+
+   #swagger.responses[200] = {
+      description: 'Piatto eliminato'
+   }
+
+   #swagger.responses[400] = {
+      description: 'Dati non validi'
+   }
+
+   #swagger.responses[401] = {
+      description: 'Non autenticato'
+   }
+
+   #swagger.responses[403] = {
+      description: 'Accesso negato'
+   }
+
+   #swagger.responses[404] = {
+      description: 'Piatto non trovato'
+   }
+
+   #swagger.responses[500] = {
+      description: 'Errore server'
+   }
+*/
+router.delete('/:id', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
+  let session;
   try {
     const dish = await Dish.findById(req.params.id);
 
@@ -313,6 +500,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Dish not found' });
     }
 
+    // non è possibile eliminare un piatto del catalogo 
     if (dish.source === 'catalog') {
       return res.status(403).json({
         success: false,
@@ -327,25 +515,31 @@ router.delete('/:id', authMiddleware, async (req, res) => {
         message: 'Unauthorized dish deletion'
       });
     }
+    
+    session = await mongoose.startSession();
+    session.startTransaction();
 
-    await Dish.findByIdAndDelete(req.params.id);
+    await Dish.findByIdAndDelete(req.params.id).session(session);
 
-    const restaurant = await Restaurant.findById(dish.restaurantId);
+    //Rimuovo il piatto dal menu del ristorante
+    const restaurant = await Restaurant.findById(dish.restaurantId).session(session);
     if (restaurant?.menuId) {
       await Menu.findByIdAndUpdate(
         restaurant.menuId,
         { $pull: { dishIds: dish._id } }
-      );
+      ).session(session);
     }
 
     const updatedMenu = await Menu.findById(restaurant.menuId);
-
     if (!updatedMenu || updatedMenu.dishIds.length === 0) {
       await Restaurant.findByIdAndUpdate(
         dish.restaurantId,
         { status: 'DRAFT' }
-      );
+      ).session(session);
     }
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.json({
       success: true,
@@ -353,6 +547,10 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     });
 
   } catch (err) {
+    if (session) {
+      await session.abortTransaction();
+      session.endSession();
+    }
     res.status(500).json({ success: false, message: err.message });
   }
 });
