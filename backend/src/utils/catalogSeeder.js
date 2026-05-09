@@ -2,8 +2,9 @@ const path = require('path');
 const fs = require('fs');
 const Dish = require('../models/Dish');
 
+//conta i documenti nella collezione Dish
 async function isCatalogEmpty() {
-  const count = await Dish.countDocuments(); //conta i documenti nella collezione Dish
+  const count = await Dish.countDocuments({source: 'catalog'}); 
     return count === 0;
 } 
  
@@ -12,6 +13,7 @@ function loadMealsData(){ //se la collezione è vuota legge il file meals.json e
     return JSON.parse(fs.readFileSync(filePath, 'utf-8')); //legge il file e lo converte in oggetto JS
 }
  
+//normalizzazione del dataset esterno
 function mapMealsToDishes(data){
     //mappappatura dei dati per adattarli allo schema Dish
     return data.map(m => ({
@@ -28,6 +30,7 @@ function mapMealsToDishes(data){
     }));
 }
 
+//funzione pubblica del modulo, verifica che la collezione Dish sia vuota e, in caso affermativo, importa i dati da meals.json
 async function importMealsIfEmpty(){
   if (await isCatalogEmpty()) {
      console.log('Database vuoto, importo meals.json...');
