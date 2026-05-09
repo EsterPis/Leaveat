@@ -3,22 +3,42 @@ const mongoose = require('mongoose');
 const router = express.Router();
 
 const Order = require('../models/Order');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, requireRole } = require('../middleware/auth');
+const Restaurateur = require('../models/Restaurateur');
+const Restaurant = require('../models/Restaurant');
 
 /* A → ROUTE HANDLER */
-router.get('/:id/stats', authMiddleware, getRestaurantStats);
+router.get('/:id/stats', authMiddleware, requireRole('RESTAURATEUR'), getRestaurantStats);
 
 /* B → FUNCTIONS */
+async function verifyOwnership(userId, restaurantId) {
+    const restaurateur = await Restaurateur.findOne({ userId });
+    if (!restaurateur) return false;
+
+    const restaurant = await Restaurant.findOne({
+        _id: restaurantId,
+        restaurateurId: restaurateur._id
+    });
+
+    return !!restaurant;
+}
+
 async function getRestaurantStats(req, res) {
-
     try {
+        //verifica proprietà
+        const restaurantId = req.params.id;
+        const ownsRestaurant = await verifyOwnership(req.user.id, restaurantId);
+        if (!ownsRestaurant) {
+            return res.status(403).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+        }
 
-        const restaurantId = new mongoose.Types.ObjectId(req.params.id);
-
+        //calcolo statistiche
         const summary = await getSummaryStats(restaurantId);
         const ordersByDay = await getOrdersByDay(restaurantId);
         const topDishes = await getTopDishes(restaurantId);
-
         res.json({
             success: true,
             data: {
@@ -39,18 +59,14 @@ async function getRestaurantStats(req, res) {
 
 }
 
-
+//aggregazione di tutte le statistiche 
 async function getSummaryStats(restaurantId) {
-
     const result = await Order.aggregate([
         { $match: { restaurantId } },
-
         {
             $group: {
                 _id: null,
-
                 totalOrders: { $sum: 1 },
-
                 completedOrders: {
                     $sum: {
                         $cond: [
@@ -60,7 +76,6 @@ async function getSummaryStats(restaurantId) {
                         ]
                     }
                 },
-
                 revenue: {
                     $sum: {
                         $cond: [
@@ -70,7 +85,6 @@ async function getSummaryStats(restaurantId) {
                         ]
                     }
                 },
-
                 avgOrder: { $avg: "$totalPrice" }
             }
         }
@@ -85,11 +99,8 @@ async function getSummaryStats(restaurantId) {
 }
 
 async function getOrdersByDay(restaurantId) {
-
     return await Order.aggregate([
-
         { $match: { restaurantId } },
-
         {
             $group: {
                 _id: {
@@ -101,20 +112,16 @@ async function getOrdersByDay(restaurantId) {
                 count: { $sum: 1 }
             }
         },
-
         { $sort: { _id: 1 } }
 
     ]);
 }
 
+//Piatti più venduti
 async function getTopDishes(restaurantId) {
-
     return await Order.aggregate([
-
         { $match: { restaurantId } },
-
         { $unwind: "$items" },
-
         {
             $group: {
                 _id: "$items.dishId",
@@ -123,9 +130,7 @@ async function getTopDishes(restaurantId) {
         },
 
         { $sort: { totalSold: -1 } },
-
         { $limit: 5 },
-
         {
             $lookup: {
                 from: "dishes",
@@ -134,9 +139,7 @@ async function getTopDishes(restaurantId) {
                 as: "dish"
             }
         },
-
         { $unwind: "$dish" },
-
         {
             $project: {
                 name: "$dish.name",

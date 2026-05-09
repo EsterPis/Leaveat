@@ -10,6 +10,21 @@ const { authMiddleware, requireRole } = require('../middleware/auth');
 
 
 /* A → UTILITY FUNCTIONS */
+
+async function verifyOwnership(userId, restaurantId) {
+  const restaurateur = await Restaurateur.findOne({ userId });
+  if (!restaurateur) return false;
+
+  const restaurant = await Restaurant.findOne({
+    _id: restaurantId,
+    restaurateurId: restaurateur._id
+  });
+
+  return !!restaurant;
+}
+
+
+/* B → PUBLIC CATALOG ROUTES */
 /* #swagger.tags = ['Dishes']
    #swagger.summary = 'Catalogo piatti'
    #swagger.description = 'Restituisce i piatti filtrabili tramite query parameters.'
@@ -31,59 +46,6 @@ const { authMiddleware, requireRole } = require('../middleware/auth');
 
    #swagger.responses[500] = {
         description: 'Errore server'
-   }
-*/
-async function verifyOwnership(userId, restaurantId) {
-  const restaurateur = await Restaurateur.findOne({ userId });
-  if (!restaurateur) return false;
-
-  const restaurant = await Restaurant.findOne({
-    _id: restaurantId,
-    restaurateurId: restaurateur._id
-  });
-
-  return !!restaurant;
-}
-
-
-/* B → PUBLIC CATALOG ROUTES */
-/* #swagger.tags = ['Dishes']
-   #swagger.summary = 'Creazione piatto'
-   #swagger.description = 'Permette al ristoratore di creare un nuovo piatto e aggiungerlo al menu del ristorante.'
-
-   #swagger.security = [{
-      "bearerAuth": []
-   }]
-
-   #swagger.parameters['body'] = {
-      in: 'body',
-      required: true,
-      schema: {
-         restaurantId: 'restaurant_id',
-         name: 'Pizza Margherita',
-         price: 10,
-         category: 'Pizza'
-      }
-   }
-
-   #swagger.responses[201] = {
-      description: 'Piatto creato'
-   }
-
-   #swagger.responses[400] = {
-      description: 'Errore richiesta'
-   }
-
-   #swagger.responses[401] = {
-      description: 'Non autenticato'
-   }
-
-   #swagger.responses[403] = {
-      description: 'Accesso negato'
-   }
-
-   #swagger.responses[500] = {
-      description: 'Errore server'
    }
 */
 router.get('/', async (req, res) => {
@@ -143,7 +105,45 @@ router.get('/', async (req, res) => {
 /* C → RESTAURATEUR DISH MANAGEMENT */
 
 // POST /api/lv/dishes
-// Creates a new custom dish and adds it to the restaurant menu
+/* #swagger.tags = ['Dishes']
+   #swagger.summary = 'Creazione piatto'
+   #swagger.description = 'Permette al ristoratore di creare un nuovo piatto e aggiungerlo al menu del ristorante.'
+
+   #swagger.security = [{
+      "bearerAuth": []
+   }]
+
+   #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+         restaurantId: 'restaurant_id',
+         name: 'Pizza Margherita',
+         price: 10,
+         category: 'Pizza'
+      }
+   }
+
+   #swagger.responses[201] = {
+      description: 'Piatto creato'
+   }
+
+   #swagger.responses[400] = {
+      description: 'Errore richiesta'
+   }
+
+   #swagger.responses[401] = {
+      description: 'Non autenticato'
+   }
+
+   #swagger.responses[403] = {
+      description: 'Accesso negato'
+   }
+
+   #swagger.responses[500] = {
+      description: 'Errore server'
+   }
+*/
 router.post('/', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
 
   const session = await mongoose.startSession();

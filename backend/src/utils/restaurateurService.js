@@ -65,7 +65,7 @@ async function createOrUpdateRestaurateur(userId, fiscalData, session) {
 
     restaurateur = created[0];
   } else {
-    Object.assign(restaurateur, fiscalData);
+    Object.assign(restaurateur, fiscalData); //sovrascrive i nuovi dati fiscali
     await restaurateur.save({ session });
   }
 
@@ -119,7 +119,6 @@ async function completeRegistration(userId, payload) {
 
     validateFiscalData({ VATNumber, legalRepresentativeName, adminEmail, bankAccountHolder, IBAN });
     if (!menu) {
-      // Caso registrazione solo dati fiscali
       const fiscalData = { VATNumber, legalRepresentativeName, adminEmail, bankAccountHolder, IBAN };
       const restaurateur = await createOrUpdateRestaurateur(userId, fiscalData, session);
 

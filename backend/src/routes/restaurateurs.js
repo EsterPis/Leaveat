@@ -1,14 +1,8 @@
 /**
- * restaurateurs.js
- * Handles RESTAURATEUR profile completion.
+ * RESTAURATEURS ROUTES
  * 
- * This route allows an authenticated user with role "RESTAURATEUR"
- * to complete their registration by:
- *  - Creating the Restaurateur profile with fiscal information
- *  - Creating an associated Restaurant
- *  - Creating or importing a related Menu
- *
- * Business logic is delegated to the restaurateurService layer.
+ * POST /complete-registration → Completa il profilo del ristoratore (dati fiscali, ecc.)
+ * PUT /me → Aggiorna i dati del ristoratore (es. partita IVA, IBAN)
  */
 
 const express = require('express');
@@ -17,13 +11,9 @@ const { completeRegistration } = require('../utils/restaurateurService'); //logi
 const { authMiddleware, requireRole } = require('../middleware/auth');
 const Restaurateur = require('../models/Restaurateur');
 
-router.post(
-  '/complete-registration',
-  authMiddleware,
-  requireRole('RESTAURATEUR'),
-  async (req, res) => {
+router.post('/complete-registration', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
     try {
-      const userId = req.user.id; // dipende da come hai popolato req.user nel middleware
+      const userId = req.user.id; 
       const data = req.body;
 
       const result = await completeRegistration(userId, data);
@@ -42,7 +32,7 @@ router.post(
   }
 );
 
-router.put('/me', authMiddleware, async (req, res) => {
+router.put('/me', authMiddleware, requireRole('RESTAURATEUR'), async (req, res) => {
   try {
     const { VATNumber, IBAN } = req.body;
 

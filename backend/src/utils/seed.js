@@ -35,7 +35,7 @@ function normalizeMealsData(items) {
   }));
 }
 
-// 🔍 Controlla se nel DB mancano i piatti del catalogo base
+// Controlla se nel DB mancano i piatti del catalogo base
 async function isCatalogEmpty() {
   const count = await Dish.countDocuments({ source: 'catalog' });
   return count === 0;
