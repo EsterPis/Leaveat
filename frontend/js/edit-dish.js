@@ -1,15 +1,17 @@
+/* Modifica Piatto */
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     const params = new URLSearchParams(window.location.search);
-    const dishId = params.get('dishId');
+    const dishId = params.get('dishId'); // ID del piatto da modificare
     const restaurantId = params.get('id'); // ID del ristorante per il reindirizzamento
 
+    // Elementi del DOM
     const form = document.getElementById('edit-dish-form');
     const spinner = document.getElementById('loading-spinner');
     const errorMessage = document.getElementById('error-message');
     const dishTitle = document.getElementById('dish-title');
 
-    // Funzione per mostrare un messaggio di errore
+    // Utility locale per mostrare errori
     const displayError = (message) => {
         errorMessage.textContent = message;
         errorMessage.style.display = 'block';
@@ -17,14 +19,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         form.style.display = 'none';
     };
 
-    // 1. Controllo di sicurezza e ID
+    // Verifica autenticazione e presenza ID
     if (!token || !dishId || !restaurantId) {
         alert('Accesso non autorizzato o ID mancante.');
         window.location.href = 'restaurateur-dashboard.html';
         return;
     }
 
-    // 2. Caricamento Dati Piatto Esistente (GET /api/lv/dishes/:id)
+    // Carica i dati del piatto esistente
     try {
         const response = await fetch(`/api/lv/dishes/${dishId}`, {
             method: 'GET',
@@ -38,7 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const dish = json.data;
 
-        await populateCategories(dish.category);
+        await populateCategories(dish.category); // Genera la select delle categorie
         // Popola il form con i dati ricevuti
         document.getElementById('dish-name').value = dish.name;
         document.getElementById('dish-price').value = dish.price.toFixed(2);
@@ -46,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('dish-description').value = dish.description || '';
         document.getElementById('dish-preptime').value = dish.prepTime || 15;
 
-        // Converti l'array di ingredienti in una stringa separata da virgole
+        // Converte l'array di ingredienti in una stringa separata da virgole
         document.getElementById('dish-ingredients').value = dish.ingredients ? dish.ingredients.join(', ') : '';
 
         // Aggiorna il titolo della pagina
@@ -62,16 +64,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // 3. Gestione Sottomissione Form (PUT /api/lv/dishes/:id)
+    /*----------------- SUBMIT FORM -----------------*/
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         errorMessage.style.display = 'none';
 
         const ingredientsStr = document.getElementById('dish-ingredients').value;
-        const ingredients = ingredientsStr.split(',').map(i => i.trim()).filter(i => i.length > 0);
-
+        const ingredients = ingredientsStr.split(',').map(i => i.trim()).filter(i => i.length > 0); //formattazione ingredienti in array
         const prepTimeInput = document.getElementById('dish-preptime').value;
-        // Raccogli i dati aggiornati dal form
+        
+        // Composizione oggetto dati da inviare al backend
         const updatedData = {
             name: document.getElementById('dish-name').value,
             price: parseFloat(document.getElementById('dish-price').value),
@@ -83,6 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log(updatedData);
 
         try {
+            // Invio richiesta di aggiornamento al backend
             const response = await fetch(`/api/lv/dishes/${dishId}`, {
                 method: 'PUT',
                 headers: {
@@ -107,23 +110,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // 4. Bottone Annulla
+    /*----------------- ANNULLA FORM-----------------*/
     document.getElementById('btn-cancel').addEventListener('click', () => {
         // Torna alla pagina di gestione del ristorante (Menù)
-        window.location.href = `restaurant-manage.html?id=${restaurantId}&tab=menu`;
+        window.location.href = `restaurant-manage.html?id=${restaurantId}&tab=menu`; 
     });
 
+    // Carica le categorie dal backend crea la select
     async function populateCategories(selectedCategory = null) {
         const categorySelect = document.getElementById('dish-category');
         // Pulizia iniziale
         categorySelect.innerHTML = '<option value="" selected disabled>Caricamento...</option>';
 
         try {
+            //caricamento categorie dal backend
             const response = await fetch('/api/lv/categories');
             const json = await response.json();
 
             if (json.success && Array.isArray(json.data)) {
                 categorySelect.innerHTML = '<option value="" disabled>Seleziona una categoria</option>';
+                // creazione select
                 json.data.forEach(cat => {
                     const option = document.createElement('option');
                     option.value = cat;
