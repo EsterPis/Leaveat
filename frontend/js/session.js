@@ -1,22 +1,9 @@
-/**
- * Session management script for Leaveat frontend.
- * 
- * Responsibilities:    
- * * - Check for JWT token on page load
- * * - Validate token with backend (/users/me)
- * * - Store user info in localStorage (except token)
- * * - Render navbar based on authentication state and role
- * * - Provide logout functionality
- */
-
-
 // Entry point
 document.addEventListener("DOMContentLoaded", initSession);
 
 /* A → SESSION */
 // Session initialization: check token, validate, render UI
 async function initSession() {
-
     const token = getToken();
     if (!token) {
         renderLoggedOutNavbar();
@@ -94,7 +81,6 @@ function renderLoggedOutNavbar() {
 
 // Render the navbar for logged-in users
 function renderLoggedInNavbar(user) {
-
     const userSection = document.querySelector(".user-section");
     if (!userSection) return;
     const cartButton = document.querySelector(".cart-button");

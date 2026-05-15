@@ -1,17 +1,15 @@
-import { initRestaurantWizard, gatherWizardData, validateRestaurantData } from './restaurant-wizard-logic.js';
+import { initRestaurantWizard } from './restaurant-wizard-logic.js';
 
 const API = '/api/lv';
 const API_RESTAURATEURS = API + '/restaurateurs';
 const token = localStorage.getItem('token');
-
 if (!token) {
     window.location.href = '/login.html';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     // Inizializza il Wizard
-    const step2Container = document.getElementById('restaurant-form-container');
-    initRestaurantWizard('restaurant-form-container', false);
+    initRestaurantWizard('restaurant-form-container', false); //scenario standard
 
     // Sposta la card del menù nello Step 3
     const wizardContent = document.getElementById('wizard-content');
@@ -31,7 +29,6 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^[0-9]{10}$/;
 const vatRegex = /^[0-9]{11}$/; // Corretta regex P.IVA (11 numeri)
 const ibanRegex = /^IT\d{2}[A-Z]\d{10}[A-Z0-9]{12}$/;
-const zipRegex = /^\d{5}$/;
 
 function isEmpty(value) {
     return !value || value.toString().trim().length === 0;

@@ -27,6 +27,7 @@ async function getRestaurantStats(req, res) {
     try {
         //verifica proprietà
         const restaurantId = req.params.id;
+        const restaurantObjectId = new mongoose.Types.ObjectId(restaurantId);
         const ownsRestaurant = await verifyOwnership(req.user.id, restaurantId);
         if (!ownsRestaurant) {
             return res.status(403).json({
@@ -36,9 +37,9 @@ async function getRestaurantStats(req, res) {
         }
 
         //calcolo statistiche
-        const summary = await getSummaryStats(restaurantId);
-        const ordersByDay = await getOrdersByDay(restaurantId);
-        const topDishes = await getTopDishes(restaurantId);
+        const summary = await getSummaryStats(restaurantObjectId);
+        const ordersByDay = await getOrdersByDay(restaurantObjectId);
+        const topDishes = await getTopDishes(restaurantObjectId);
         res.json({
             success: true,
             data: {

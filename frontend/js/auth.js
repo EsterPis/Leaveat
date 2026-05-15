@@ -8,33 +8,38 @@ function setMessage(el, text, type = 'success') {
 
 // ----- REGISTRAZIONE -----
 function setupRegister() {
-  const form = document.getElementById('regForm');
-  const msg = document.getElementById('msg');
+  const form = document.getElementById('regForm'); //form di registrazione
+  const msg = document.getElementById('msg'); //messaggi di feedback
 
   form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // disattiva il comportamento di submit predefinito
+    
     msg.innerHTML = '';
-
-    const formData = Object.fromEntries(new FormData(form).entries());
+    const formData = Object.fromEntries(new FormData(form).entries()); // converte i dati del form in un oggetto
 
     try {
+      //invio dati al server
       const res = await fetch(`${API_BASE}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
 
-      const out = await res.json();
+      
+      const out = await res.json(); //attesa risposta del server
 
+      //messaggio di errore
       if (!out.success) {
         throw new Error(out.message || 'Errore durante la registrazione');
-      }
+      } 
+
+      // Salvataggio token e dati utente in localStorage
       localStorage.setItem('token', out.data.token);
       localStorage.setItem('userId', out.data.userId);
       localStorage.setItem('firstName', formData.firstName);
       localStorage.setItem('role', out.data.role);
 
-      // reindirizza in base al ruolo scelto
+      //reindirizzamento in base al ruolo scelto
       if (out.data.role === 'CUSTOMER') {
         setTimeout(() => (window.location.href = '/complete-customer.html'), 1500);
       } else if (out.data.role === 'RESTAURATEUR') {
@@ -50,26 +55,28 @@ function setupRegister() {
 }
 
 // ----- LOGIN -----
-// ----- LOGIN -----
 function setupLogin() {
-  const form = document.getElementById('loginForm');
-  const msg = document.getElementById('msg'); 
+  const form = document.getElementById('loginForm'); //form di login
+  const msg = document.getElementById('msg'); //messaggi di feedback
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     msg.innerHTML = '';
 
-    const { email, password } = Object.fromEntries(new FormData(form).entries());
+    const { email, password } = Object.fromEntries(new FormData(form).entries()); // converte i dati del form in un oggetto
 
     try {
+
+      //invio dati al server
       const res = await fetch(`${API_BASE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
 
-      const out = await res.json();
+      const out = await res.json(); //attesa risposta del server
 
+      //messaggio di errore
       if (!out.success) {
         if (out.message === 'Utente non trovato') {
           setMessage(msg, `Utente non registrato. <a href="/register.html">Registrati qui</a>`, 'warning');
@@ -79,7 +86,7 @@ function setupLogin() {
         return;
       }
 
-      // ✅ Salviamo i dati nel localStorage
+      // Salvataggio token e dati utente in localStorage
       const token = out.data?.token;
       if (!token) throw new Error('Token mancante nella risposta del server');
 
@@ -89,9 +96,6 @@ function setupLogin() {
       localStorage.setItem('userId', payload.userId);
       localStorage.setItem('role', payload.role);
       localStorage.setItem('email', payload.email);
-
-      // Se hai già salvato anche firstName in fase di registrazione:
-      // lo manteniamo sincronizzato
       if (!localStorage.getItem('firstName')) {
         localStorage.setItem('firstName', payload.firstName || 'Utente');
       }

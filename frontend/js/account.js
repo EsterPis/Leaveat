@@ -10,27 +10,20 @@ let currentCustomerPreferences = {};
 document.addEventListener('DOMContentLoaded', initPage);
 
 /* A → PAGE INIT */
-
 async function initPage() {
-
     const token = localStorage.getItem('token');
-
     if (!token) {
         window.location.href = "login.html";
         return;
     }
 
     try {
-
         const data = await fetchUserProfile(token);
-
         currentUser = data.user;
         currentProfile = data.profile || {};
-
         renderUserData(currentUser);
         populateEditForm(currentUser);
         renderRoleSection(currentUser, currentProfile);
-
         if (currentUser.role === "CUSTOMER") {
             currentCustomerPreferences = currentProfile.preferences || {};
             selectedCategories = [...(currentCustomerPreferences.favoriteCategories || [])]
@@ -145,13 +138,11 @@ function showAlert(message, type) {
 /* D → ROLE MANAGEMENT */
 
 function renderRoleSection(user, profile) {
-
     if (user.role === "CUSTOMER")
         renderCustomerSection(profile);
 
     if (user.role === "RESTAURATEUR")
         renderRestaurateurSection(profile);
-
 }
 
 

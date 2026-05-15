@@ -3,28 +3,27 @@ const form = document.getElementById('customerForm');
 /* A → UTILITY FUNCTIONS */
 let selectedCategories = [];
 let selectedRestaurants = [];
-// Loads categories and restaurants to populate the select inputs
+
+// Carica le categorie e le ristoranti per popolare i select input
 async function loadCategories() {
   const res = await fetch('/api/lv/categories');
   const out = await res.json();
-
   if (!out.success) return;
 
   const container = document.getElementById('categoriesList');
   container.innerHTML = '';
-
+  // Crea un pulsante per ogni categoria
   out.data.forEach(cat => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn btn-outline-secondary btn-sm';
     btn.textContent = cat;
-
     btn.addEventListener('click', () => toggleCategory(cat));
-
     container.appendChild(btn);
   });
 }
 
+// Aggiunge o rimuove una categoria dalla lista delle preferite
 function toggleCategory(cat) {
   if (selectedCategories.includes(cat)) {
     selectedCategories = selectedCategories.filter(c => c !== cat);
@@ -35,6 +34,7 @@ function toggleCategory(cat) {
   renderSelectedCategories();
 }
 
+// Mostra le categorie selezionate come badge con un pulsante di rimozione
 function renderSelectedCategories() {
   const container = document.getElementById('selectedCategories');
   container.innerHTML = '';
@@ -55,12 +55,13 @@ function renderSelectedCategories() {
   });
 }
 
+// Rimuove una categoria dalla lista delle preferite
 function removeCategory(cat) {
   selectedCategories = selectedCategories.filter(c => c !== cat);
   renderSelectedCategories();
 }
 
-// Loads categories and restaurants to populate the select inputs
+// Carica i ristoranti e li mostra come pulsanti per la selezione
 async function loadRestaurants() {
   const res = await fetch('/api/lv/restaurants');
   const out = await res.json();
@@ -70,6 +71,7 @@ async function loadRestaurants() {
   const container = document.getElementById('restaurantsList');
   container.innerHTML = '';
 
+  // Crea un pulsante per ogni ristorante
   out.data.forEach(r => {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -82,18 +84,18 @@ async function loadRestaurants() {
   });
 }
 
+// Aggiunge o rimuove un ristorante dalla lista dei preferiti
 function toggleRestaurant(r) {
   const exists = selectedRestaurants.find(x => x._id === r._id);
-
   if (exists) {
     selectedRestaurants = selectedRestaurants.filter(x => x._id !== r._id);
   } else {
     selectedRestaurants.push(r);
   }
-
   renderSelectedRestaurants();
 }
 
+// Mostra i ristoranti selezionati come badge con un pulsante di rimozione
 function renderSelectedRestaurants() {
   const container = document.getElementById('selectedRestaurants');
   container.innerHTML = '';
@@ -114,6 +116,7 @@ function renderSelectedRestaurants() {
   });
 }
 
+// Rimuove un ristorante dalla lista dei preferiti
 function removeRestaurant(id) {
   selectedRestaurants = selectedRestaurants.filter(r => r._id !== id);
   renderSelectedRestaurants();
@@ -128,6 +131,7 @@ if (form) {
     loadRestaurants();
   });
 
+  //invio del form
   form.addEventListener('submit', async e => {
     e.preventDefault();
 
@@ -135,7 +139,6 @@ if (form) {
     msg.innerHTML = '';
 
     const token = localStorage.getItem('token');
-
     if (!token) {
       msg.innerHTML = '<div class="alert alert-danger">Utente non autenticato.</div>';
       return;
@@ -153,6 +156,7 @@ if (form) {
     };
 
     try {
+      // invio richiesta al server
       const res = await fetch(API_BASE, {
         method: 'PUT',
         headers: {
@@ -163,15 +167,11 @@ if (form) {
       });
 
       const out = await res.json();
-
       if (!out.success)
         throw new Error(out.message || 'Errore durante il salvataggio');
 
       msg.innerHTML = '<div class="alert alert-success">Profilo aggiornato con successo!</div>';
-
-      setTimeout(() => {
-        window.location.href = '/index.html';
-      }, 1500);
+      setTimeout(() => { window.location.href = '/index.html'; }, 1500); //reindirizzamento
 
     } catch (err) {
       msg.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
