@@ -1,16 +1,15 @@
+/* Renderizza, in maniera dinamica, le card relative ai ristoranti di proprtà all'interno della dashboard */
 document.addEventListener('DOMContentLoaded', async () => {
-    const token = localStorage.getItem('token'); // Assumo che al login salvi il token qui
+    const token = localStorage.getItem('token'); 
     const container = document.getElementById('restaurants-container');
-
-    // 1. Controllo Sicurezza base
     if (!token) {
         alert('Devi effettuare il login per accedere qui.');
-        window.location.href = 'login.html'; // Reindirizza al login
+        window.location.href = 'login.html'; 
         return;
     }
 
-    // 2. Fetch dei dati dal Backend
     try {
+        // recupero ristoranti di proprietà
         const response = await fetch('/api/lv/restaurants/my-restaurants', {
             method: 'GET',
             headers: {
@@ -26,22 +25,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const json = await response.json();
         const restaurants = json.data; // Array dei ristoranti
 
-        // Puliamo il container (rimuove lo spinner)
+        // pulizia del container
         container.innerHTML = '';
 
+        // messaggio di errore
         if (restaurants.length === 0) {
             container.innerHTML = '<div class="col-12"><p class="alert alert-info">Non hai ancora inserito nessun ristorante.</p></div>';
             return;
         }
 
-        // 3. Generazione delle Card
+        // Renderizzazione card ristoranti
         restaurants.forEach(restaurant => {
-            // Creo l'elemento colonna
+            // colonne
             const col = document.createElement('div');
             col.className = 'col-md-4 mb-4';
 
-            // Costruisco la card HTML
-            // Nota: passiamo l'ID del ristorante nell'URL del pulsante "Gestisci"
+            // costruzione card HTML
             col.innerHTML = `
                 <div class="card restaurant-card h-100 shadow-sm">
                     <div class="card-body">
