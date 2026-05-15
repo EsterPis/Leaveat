@@ -1,4 +1,5 @@
-import { initRestaurantWizard } from './restaurant-wizard-logic.js';
+/*Gestione prima fase di registrazione ristoratore (dati fiscali), poi rendirizza alla pagina di creazione ristorante. */
+import { initRestaurantWizard } from './restaurant-wizard-logic.js'; //logica delegata al wizard
 
 const API = '/api/lv';
 const API_RESTAURATEURS = API + '/restaurateurs';
@@ -8,16 +9,16 @@ if (!token) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Inizializza il Wizard
+    // Inizializza il wizard di creazione ristorante (logica e UI)
     initRestaurantWizard('restaurant-form-container', false); //scenario standard
 
-    // Sposta la card del menù nello Step 3
+    // Spostamento dinamico della card menu nello step finale del wizard
     const wizardContent = document.getElementById('wizard-content');
     if (wizardContent) {
         const menuCard = wizardContent.querySelector('.card:nth-of-type(2)');
         const step3Container = document.getElementById('menu-builder-container');
         if (menuCard && step3Container) {
-            step3Container.appendChild(menuCard);
+            step3Container.appendChild(menuCard); // Sposta la card del menù nello Step 3
         }
     }
 
@@ -27,22 +28,25 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- HELPERS UI E VALIDAZIONI ---
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^[0-9]{10}$/;
-const vatRegex = /^[0-9]{11}$/; // Corretta regex P.IVA (11 numeri)
-const ibanRegex = /^IT\d{2}[A-Z]\d{10}[A-Z0-9]{12}$/;
+const vatRegex = /^[0-9]{11}$/; // 11 numeri
+const ibanRegex = /^IT\d{2}[A-Z]\d{10}[A-Z0-9]{12}$/; // IBAN italiano: IT + 2 cifre + 1 lettera + 10 cifre + 12 alfanumerici
 
+// Controlla se un valore è vuoto (null, undefined, stringa vuota o solo spazi)
 function isEmpty(value) {
     return !value || value.toString().trim().length === 0;
 }
 
+// Funzioni di validazione specifiche per ogni campo
 function isValidEmail(email) { return emailRegex.test(email); }
 function isValidPhone(phone) { return phoneRegex.test(phone); }
 function isValidVAT(vat) { return vatRegex.test(vat); }
 function isValidIBAN(iban) {
     if (!iban) return false;
-    // Rimuovi spazi e metti maiuscolo
+    // Rimuove spazi e tutto maiuscolo
     return ibanRegex.test(iban.replace(/\s+/g, '').toUpperCase());
 }
 
+// Validazione completa dei dati fiscali prima dell'invio al server
 function validateFiscalData(d) {
     if (Object.values(d).some(isEmpty)) {
         showAlert('error', 'Compila tutti i campi dei dati fiscali.');
@@ -63,22 +67,7 @@ function validateFiscalData(d) {
     return true;
 }
 
-function showStep(n) {
-    ['step1', 'step2', 'step3'].forEach((id, i) => {
-        const section = document.getElementById(id);
-        if (section) section.classList.toggle('d-none', i !== n - 1);
-    });
-
-    ['step1Crumb', 'step2Crumb', 'step3Crumb'].forEach((id, i) => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.classList.toggle('active', i === n - 1);
-            if (i === n - 1) el.classList.add('fw-bold');
-            else el.classList.remove('fw-bold');
-        }
-    });
-}
-
+// Funzione per mostrare un messaggio di alert (successo o errore) 
 function showAlert(type, message) {
     const alertContainer = document.getElementById('alertMessage');
     if (!alertContainer) {
@@ -91,15 +80,15 @@ function showAlert(type, message) {
     alertContainer.classList.remove('d-none');
 }
 
+// Nasconde l'alert
 function clearAlert() {
     const alertContainer = document.getElementById('alertMessage');
     if (alertContainer) alertContainer.classList.add('d-none');
 }
 
-// --- LOGICA DATI FISCALI ---
+// Raccoglie i dati fiscali dai campi del form
 function getFiscalData() {
     return {
-        // Qui usiamo i nomi interni al form
         vatNumber: document.getElementById('vat').value.trim(),
         legalRepresentative: document.getElementById('legalRepresentativeName').value.trim(),
         adminEmail: document.getElementById('adminEmail').value.trim(),
@@ -109,26 +98,27 @@ function getFiscalData() {
 }
 
 function setupStepperEvents() {
-
     const startBtn = document.getElementById('startWizard');
+    // Avvio del wizard: mostra il primo step e nasconde l'intro
     if (startBtn) {
         startBtn.onclick = () => {
             document.getElementById('intro')?.classList.add('d-none');
             clearAlert();
-            showStep(1);
+            document.getElementById('step1')?.classList.remove('d-none');
         };
     }
 
+    // Salvataggio dei dati fiscali al click del bottone "Finish" nel form creazione ristorante
     const finishBtn = document.getElementById('finish');
     if (finishBtn) {
         finishBtn.onclick = async () => {
-            clearAlert();
+            clearAlert(); // Pulisce eventuali messaggi precedenti
+            const fData = getFiscalData(); // Raccoglie i dati fiscali dal form
 
-            const fData = getFiscalData();
-
-            if (!validateFiscalData(fData)) return;
+            if (!validateFiscalData(fData)) return; //Validazione dati
 
             try {
+                //Costruzione playload
                 const payload = {
                     VATNumber: fData.vatNumber,
                     legalRepresentativeName: fData.legalRepresentative,
@@ -137,6 +127,7 @@ function setupStepperEvents() {
                     IBAN: fData.iban
                 };
 
+                //Richiesta completamento registrazione
                 const res = await fetch(`${API_RESTAURATEURS}/complete-registration`, {
                     method: 'POST',
                     headers: {
@@ -147,7 +138,7 @@ function setupStepperEvents() {
                 });
 
                 const json = await res.json();
-
+                // Se la risposta è positiva, reindirizza alla pagina di creazione ristorante
                 if (res.ok && json.success) {
                     window.location.href = 'create-restaurant.html';
                 } else {
