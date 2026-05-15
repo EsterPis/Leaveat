@@ -1,11 +1,14 @@
+/* Controller pagina account */
 const API_URL = '/api/lv';
 
-let currentUser = null;
-let currentProfile = null;
+// Variabili globali per gestione stato
+let currentUser = null; //nome, email, ruolo
+let currentProfile = null; //dati specifici per ruolo (es. preferenze cliente, dati fiscali ristoratore)
 let currentCustomerPreferences = {};
-document.addEventListener('DOMContentLoaded', initPage);
+document.addEventListener('DOMContentLoaded', initPage); // Inizializza pagina dopo caricamento DOM
 
-/* A → PAGE INIT */
+/*------------------------- INIT PAGE -------------------------*/
+// Controlla token, carica dati utente e profilo, renderizza UI
 async function initPage() {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -14,27 +17,30 @@ async function initPage() {
     }
 
     try {
-        const data = await fetchUserProfile(token);
+        const data = await fetchUserProfile(token); //fetch del profilo utente (dati base + dati specifici per ruolo)
+        //salvataggio stato globale
         currentUser = data.user;
         currentProfile = data.profile || {};
+
+        //render nel riepilogo e popolamento form di modifica
         renderUserData(currentUser);
         populateEditForm(currentUser);
         renderRoleSection(currentUser, currentProfile);
+        //se cliente, carica preferenze per modale e variabili globali per gestione preferenze
         if (currentUser.role === "CUSTOMER") {
             currentCustomerPreferences = currentProfile.preferences || {};
-            selectedCategories = [...(currentCustomerPreferences.favoriteCategories || [])]
-            selectedRestaurants = (currentCustomerPreferences.favoriteRestaurantIds || [])
-                .map(r => typeof r === "object" ? r : { _id: r });
+            selectedCategories = [...(currentCustomerPreferences.favoriteCategories || [])] //clono array per evitare modifiche dirette finché non si salva
+            selectedRestaurants = (currentCustomerPreferences.favoriteRestaurantIds || []) 
+                .map(r => typeof r === "object" ? r : { _id: r }); //normalizzazione 
             const paymentSelect = document.getElementById("paymentMethodSelect");
             if (paymentSelect) {
                 paymentSelect.value = currentProfile.paymentMethod || "CASH";
             }
             loadCategories();
             loadRestaurants();
-            renderSelectedCategories();
-            renderSelectedRestaurants();
+            renderSelectedCategories(); //renderizza preferenze selezionate
+            renderSelectedRestaurants(); //renderizza preferenze selezionate
         }
-
         const ibanInput = document.getElementById("editIban");
 
         if (ibanInput) {
@@ -53,17 +59,13 @@ async function initPage() {
     }
 }
 
-
-/* B → API CALLS */
-
+// Chiamata API per ottenere dati utente e profilo 
 async function fetchUserProfile(token) {
-
     const response = await fetch(`${API_URL}/users/me`, {
         headers: {
             "Authorization": `Bearer ${token}`
         }
     });
-
     if (!response.ok)
         throw new Error("Errore caricamento profilo");
 
@@ -94,11 +96,8 @@ async function fetchUserProfile(token) {
     };
 }
 
-
-/* C → UI RENDER */
-
+// Renderizza dati base utente (nome, email, telefono) nella sezione riepilogo
 function renderUserData(user) {
-
     document.getElementById("lblFirstName").textContent = user.firstName;
     document.getElementById("lblLastName").textContent = user.lastName;
     document.getElementById("lblEmail").textContent = user.email;
@@ -106,9 +105,8 @@ function renderUserData(user) {
 
 }
 
-
+// Popola form di modifica dati base utente
 function populateEditForm(user) {
-
     document.getElementById("editFirstName").value = user.firstName;
     document.getElementById("editLastName").value = user.lastName;
     document.getElementById("editPhone").value = user.phoneNumber;
@@ -116,23 +114,20 @@ function populateEditForm(user) {
 
 }
 
+// Mostra messaggio di alert (successo o errore) con timeout per scomparsa
 function showAlert(message, type) {
-
     const alertBox = document.getElementById("alertMessage");
-
     alertBox.className = `alert alert-${type}`;
     alertBox.textContent = message;
     alertBox.classList.remove("d-none");
-
     setTimeout(() => {
         alertBox.classList.add("d-none");
     }, 5000);
 
 }
 
-
-/* D → ROLE MANAGEMENT */
-
+/*---------------------- GESTIONE SEZIONI PER RUOLO -------------------------*/
+// Seleziona il tipo di render sulla base del ruolo
 function renderRoleSection(user, profile) {
     if (user.role === "CUSTOMER")
         renderCustomerSection(profile);
@@ -141,52 +136,46 @@ function renderRoleSection(user, profile) {
         renderRestaurateurSection(profile);
 }
 
-
-/* E → CUSTOMER SECTION */
-
+/*----------- RENDER SEZIONE CLIENTE -----------*/
+// Mostra sezione preferenza cliente
 function renderCustomerSection(profile) {
-
     const section = document.getElementById("customer-section");
     section.classList.remove("d-none");
-
     renderPaymentMethod(profile);
     renderFavoriteCategories(profile);
     renderFavoriteRestaurants(profile);
-
 }
 
-
+// Renderizza il metodo di pagamento preferito
 function renderPaymentMethod(profile) {
-
+    // Mapping user-friendly
     const paymentMap = {
         CASH: "Contanti",
         PREPAID_CARD: "Carta prepagata",
         CREDIT_CARD: "Carta di credito"
     };
-
     const payment = profile.paymentMethod
         ? paymentMap[profile.paymentMethod]
         : "Non specificato";
 
-    document.getElementById("lblPayment").textContent = payment;
-
+    document.getElementById("lblPayment").textContent = payment; //inserimento nel label
 }
 
-
+// Renderizza le categorie preferite del cliente
 function renderFavoriteCategories(profile) {
-
     const list = document.getElementById("listPreferences");
     list.innerHTML = "";
 
-    const categories = profile.preferences?.favoriteCategories || [];
+    // Normalizzazione dati: se sono stringhe, le trasformo in oggetti per uniformità
+    const categories = profile.preferences?.favoriteCategories || []; 
 
     if (categories.length === 0) {
         list.innerHTML = "<li>Nessuna preferenza specificata</li>";
         return;
     }
 
+    // Costruzione elenco categorie preferite
     categories.forEach(cat => {
-
         const li = document.createElement("li");
         li.textContent = cat;
         list.appendChild(li);
@@ -195,18 +184,19 @@ function renderFavoriteCategories(profile) {
 
 }
 
-
+// Renderizza i ristoranti preferiti del cliente
 async function renderFavoriteRestaurants(profile) {
-
     const list = document.getElementById("listRestaurants");
     list.innerHTML = "";
 
+    // Normalizzazione dati: se sono stringhe, le trasformo in oggetti per uniformità
     const restaurants = profile.preferences?.favoriteRestaurantIds || [];
 
     if (restaurants.length === 0) {
         list.innerHTML = "<li>Nessun ristorante preferito</li>";
         return;
     }
+    // Costruzione elenco ristoranti preferiti
     restaurants.forEach(r => {
         const li = document.createElement("li");
         li.textContent = r.displayName || r;
@@ -215,9 +205,8 @@ async function renderFavoriteRestaurants(profile) {
     });
 }
 
-//Update customer preferences (payment method, favorite categories, favorite restaurants)
+// Modifica preferenze cliente
 async function updatePreferences() {
-
     const token = localStorage.getItem("token");
 
     const paymentMethod = document.getElementById("paymentMethodSelect").value;
@@ -230,7 +219,7 @@ async function updatePreferences() {
     };
 
     try {
-
+        // Chiamata backend
         const res = await fetch(`${API_URL}/customers/me`, {
             method: "PUT",
             headers: {
@@ -247,11 +236,12 @@ async function updatePreferences() {
 
         showAlert("Preferenze aggiornate", "success");
 
+        // Chiusura modale
         bootstrap.Modal.getInstance(
             document.getElementById("preferencesModal")
         ).hide();
 
-        initPage();
+        initPage(); // Ricarica dati e UI per riflettere le modifiche
 
     } catch (err) {
 
@@ -262,13 +252,13 @@ async function updatePreferences() {
 }
 
 
-/* F → RESTAURATEUR SECTION */
-
+/*----------- RENDER SEZIONE RISTORATORE -----------*/
+// Mostra sezione dati fiscali ristoratore
 function renderRestaurateurSection(profile) {
-
     const section = document.getElementById("restaurateur-section");
-    section.classList.remove("d-none");
+    section.classList.remove("d-none"); // Mostra sezione
 
+    // Popola dati fiscali
     document.getElementById("lblVat").textContent = profile.VATNumber || "N/D";
     document.getElementById("lblIban").textContent = profile.IBAN || "N/D";
 
@@ -282,9 +272,8 @@ function renderRestaurateurSection(profile) {
 
 }
 
-//Render modal with current fiscal data
+// Popola form di modifica dati fiscali
 const fiscalModal = document.getElementById('fiscalModal');
-
 fiscalModal.addEventListener('show.bs.modal', () => {
     const currentVat = document.getElementById('lblVat').textContent.trim();
     const currentIban = document.getElementById('lblIban').textContent.trim();
@@ -293,6 +282,7 @@ fiscalModal.addEventListener('show.bs.modal', () => {
     document.getElementById('editIban').value = currentIban;
 });
 
+// Modifica dati fiscali
 async function updateFiscalData() {
     const vat = document.getElementById("editVat").value;
     let iban = document.getElementById("editIban").value;
@@ -309,6 +299,7 @@ async function updateFiscalData() {
     }
 
     try {
+        // richiesta backend
         const res = await fetch("/api/lv/restaurateurs/me", {
             method: "PUT",
             headers: {
@@ -325,7 +316,6 @@ async function updateFiscalData() {
 
         if (data.success) {
             showAlert("Dati fiscali aggiornati", "success");
-
             // aggiorna UI
             document.getElementById("lblVat").textContent = vat;
             document.getElementById("lblIban").textContent = iban;
@@ -340,10 +330,12 @@ async function updateFiscalData() {
     }
 }
 
+// Validazione partita iva
 function isValidVAT(vat) {
     return /^[0-9]{11}$/.test(vat);
 }
 
+// validazione IBAN
 function isValidIBAN(iban) {
     if (!iban) return false;
 
@@ -352,12 +344,8 @@ function isValidIBAN(iban) {
     return /^IT\d{2}[A-Z]\d{10}[0-9A-Z]{12}$/.test(cleaned);
 }
 
-
-/* G → USER SECTION*/
-
-//Update user data (name, phone, email)
+// Modifica dati base utente (nome, email, telefono)
 async function updateUser() {
-
     const token = localStorage.getItem("token");
 
     const updatedData = {
@@ -369,7 +357,7 @@ async function updateUser() {
     const newEmail = document.getElementById("editEmail").value;
 
     try {
-
+        // richiesta backend
         const res = await fetch(`${API_URL}/users/me`, {
             method: "PUT",
             headers: {
@@ -385,6 +373,7 @@ async function updateUser() {
             return;
         }
 
+        // Se l'email è stata modificata, aggiorna anche quella
         const emailRes = await fetch(`${API_URL}/users/me/email`, {
             method: "PUT",
             headers: {
@@ -400,15 +389,16 @@ async function updateUser() {
             return;
         }
 
-        localStorage.setItem("email", newEmail);
+        localStorage.setItem("email", newEmail); //modifica email in localStorage
 
+        // chiusura modale
         bootstrap.Modal.getInstance(
             document.getElementById("editModal")
         ).hide();
 
         showAlert("Dati aggiornati!", "success");
 
-        initPage();
+        initPage(); //ricarica pagina per aggiornare dati e UI
 
     } catch (err) {
 
@@ -419,7 +409,7 @@ async function updateUser() {
 
 }
 
-//Update user password
+// Modifica password utente
 async function updatePassword() {
     const token = localStorage.getItem("token");
 
@@ -428,6 +418,7 @@ async function updatePassword() {
         newPassword: document.getElementById("newPassword").value
     };
 
+    // richiesta backend
     const res = await fetch(`${API_URL}/users/me/password`, {
         method: "PUT",
         headers: {
@@ -446,42 +437,36 @@ async function updatePassword() {
         showAlert(err.message, "danger");
     }
 
+    // chiusura modale
     bootstrap.Modal.getInstance(
         document.getElementById("passwordModal")
     ).hide();
 
 }
 
-//Delete user account (with confirmation)
+// Eliminazione definitiva account
 async function deleteAccount() {
-
     const token = localStorage.getItem("token");
-
     try {
-
+        // richiesta backend
         const res = await fetch(`${API_URL}/users/me`, {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${token}`
             }
         });
-
         if (!res.ok) {
             const err = await res.json();
             throw new Error(err.message);
         }
 
-        localStorage.clear();
+        localStorage.clear(); //pulizia local storage - logout forzato
 
         alert("Account eliminato");
-
-        window.location.href = "index.html";
+        window.location.href = "index.html"; //reindirizzamento ad homepage
 
     } catch (err) {
-
-        alert("Errore eliminazione: " + err.message);
-
+        alert("Errore eliminazione: " + err.message); 
     }
-
 }
 
