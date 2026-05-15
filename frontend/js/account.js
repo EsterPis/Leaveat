@@ -3,10 +3,6 @@ const API_URL = '/api/lv';
 let currentUser = null;
 let currentProfile = null;
 let currentCustomerPreferences = {};
-
-//let selectedCategories = [];
-//let selectedRestaurants = [];
-
 document.addEventListener('DOMContentLoaded', initPage);
 
 /* A → PAGE INIT */
