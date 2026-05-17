@@ -2,7 +2,7 @@
 document.addEventListener("DOMContentLoaded", initSession);
 
 /* A → SESSION */
-// Session initialization: check token, validate, render UI
+// Inizializzazione sessione: verifica token, recupera dati utente e aggiorna UI di conseguenza
 async function initSession() {
     const token = getToken();
     if (!token) {
@@ -24,26 +24,26 @@ async function initSession() {
     updateWelcomeTitle(user);
 }
 
-// Session closure: clear storage and redirect to home
+// Chiusura sessione,  cancella i dati e reindirizza alla homepage
 function logout() {
     localStorage.clear();
     window.location.href = "/index.html";
 }
 
 /* B → UTILITY FUNCTIONS */
-// Exctract token from localStorage
+// Estrae il token da localStorage
 function getToken() {
     return localStorage.getItem("token");
 }
 
-// Saves user info in localStorage (except token) for easy access across pages
+// Salva i dati essenziali dell'utente in localStorage per uso futuro 
 function saveUserToStorage(user) {
     localStorage.setItem("firstName", user.firstName);
     localStorage.setItem("role", user.role);
     localStorage.setItem("email", user.email);
 }
 
-// Validates token by calling /users/me. Returns user data if valid, null otherwise.
+// Valida il token chiamando l'endpoint /users/me, restituisce i dati utente se valido o null se non valido
 async function validateToken(token) {
     try {
         const response = await fetch("http://localhost:3005/api/lv/users/me", {
@@ -62,7 +62,7 @@ async function validateToken(token) {
 }
 
 /* C → UI RENDERING */
-// Render the navbar for logged-out users
+// Renderizza la navbar per utenti non loggati
 function renderLoggedOutNavbar() {
     const navbar = document.querySelector(".user-section");
     if (!navbar) return;
@@ -79,7 +79,7 @@ function renderLoggedOutNavbar() {
         <a class="btn btn-warning btn-sm" href="/register.html">Registrati</a>`;
 }
 
-// Render the navbar for logged-in users
+// Renderizza la navbar per utenti loggati
 function renderLoggedInNavbar(user) {
     const userSection = document.querySelector(".user-section");
     if (!userSection) return;
@@ -131,7 +131,7 @@ function renderLoggedInNavbar(user) {
     document.getElementById("logout-btn").addEventListener("click", logout);
 }
 
-// Update the welcome title on the homepage with the user's name
+// Aggiorna il titolo di benvenuto nella homepage con il nome dell'utente
 function updateWelcomeTitle(user) {
     const headerTitle = document.querySelector("h1.display-6");
     if (!headerTitle) return;

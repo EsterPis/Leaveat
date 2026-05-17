@@ -1,5 +1,5 @@
+// renderizza la navbar con stili dinamici in base al ruolo dell'utente (restaurateur o cliente)
 export function renderNavbar() {
-
     const role = localStorage.getItem("role");
     const navbarClass = role === "RESTAURATEUR"
     ? "navbar-restaurateur"
@@ -29,5 +29,5 @@ export function renderNavbar() {
     </nav>
     `;
 
-    document.body.insertAdjacentHTML("afterbegin", navbarHTML);
+    document.body.insertAdjacentHTML("afterbegin", navbarHTML); // Inserisce la navbar all'inizio del body
 }

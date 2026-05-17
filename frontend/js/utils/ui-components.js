@@ -1,5 +1,5 @@
 // ui-components.js
-
+// Renderizza righe di piatti per catalogo e riepilogo con bottone di azione
 export function renderDishRow(dish, buttonText, onClick, isAdded = false) {
     const div = document.createElement('div');
     // Stile coerente per righe catalogo e riepilogo
@@ -41,8 +41,8 @@ export function renderDishRow(dish, buttonText, onClick, isAdded = false) {
     return div;
 }
 
+// Renderizza il form per i dati del ristorante
 export function renderRestaurantForm() {
-    // ... (Tutto il codice precedente del form ristorante rimane identico) ...
     return `
         <div class="card p-4 mb-4 shadow-sm border-0">
             <h3 class="h5 mb-3 text-primary"><i class="bi bi-shop me-2"></i>Dati del Ristorante</h3>
@@ -119,6 +119,8 @@ export function renderRestaurantForm() {
         </div>`;
 }
 
+// Renderizza la sezione di configurazione del menù con tab per catalogo, piatto custom e riepilogo 
+//(utilizzata in restaurant-wizard-logic.js)
 export function renderMenuSection(showCloneButton = false) {
     return `
         <div class="card p-4 shadow-sm border-0">
