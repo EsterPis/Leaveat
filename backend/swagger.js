@@ -1,4 +1,6 @@
 const swaggerAutogen = require('swagger-autogen')();
+const path = require('path');
+process.chdir(__dirname);
 
 const doc = {
   info: {
@@ -17,17 +19,18 @@ const doc = {
   }
 };
 
-const outputFile = './backend/swagger-output.json';
+const outputFile = path.resolve(__dirname, 'swagger-output.json');
+
 const endpointsFiles = [
-  './backend/src/app.js',
-  './backend/src/routes/auth.js',
-  './backend/src/routes/categories.js',
-  './backend/src/routes/customers.js',
-  './backend/src/routes/restaurateurs.js',
-  './backend/src/routes/restaurants.js',
-  './backend/src/routes/statistics.js',
-  './backend/src/routes/dishes.js',
-  './backend/src/routes/orders.js'
+  './src/app.js',
+  './src/routes/auth.js',
+  './src/routes/categories.js',
+  './src/routes/customers.js',
+  './src/routes/restaurateurs.js',
+  './src/routes/restaurants.js',
+  './src/routes/statistics.js',
+  './src/routes/dishes.js',
+  './src/routes/orders.js'
 ];
 
 
