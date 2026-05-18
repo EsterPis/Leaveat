@@ -1,3 +1,10 @@
+// Logica di creazione ristorante, inclusa la gestione dei piatti, la ricerca nel catalogo e la costruzione del payload finale per il backend.
+/*
+Si considerano, per la creazione di un ristorante, due scenari principali:
+- Scenario A: completamento della registrazione, con il wizard che guida l'utente passo passo fino alla creazione del primo ristorante e del suo menù.
+- Scenario B: creazione diretta da dashboard senza passare per la registrazione (per ristoratori già registrati che vogliono aggiungere un nuovo ristorante).
+Il wizard è progettato per essere flessibile e adattarsi a entrambi gli scenari, con alcune funzionalità aggiuntive (come la clonazione del menù) disponibili solo nello scenario B.
+*/
 import { renderRestaurantForm, renderMenuSection, renderDishRow } from './utils/ui-components.js';
 
 let currentDishes = []; // menù lato frontend
