@@ -1,5 +1,5 @@
 /**
- * Script: reset-db.js
+ * 
  * Descrizione: Pulisce tutte le collezioni
  */
 
@@ -24,21 +24,21 @@ async function resetDatabase() {
             dbName: process.env.DB_NAME
         });
 
-        console.log("✔ Connesso a MongoDB");
+        console.log("-----------Connesso a MongoDB -----------");
 
         const models = [User, Customer, Restaurateur, Restaurant, Menu, Dish, Order];
 
         for (const model of models) {
             await model.deleteMany({});
-            console.log(`✔ Svuotata collezione: ${model.modelName}`);
+            console.log(`- Svuotata collezione: ${model.modelName}`);
         }
 
         await mongoose.disconnect();
-        console.log("✔ Reset completato");
+        console.log("------------------------- Reset completato -------------------------");
         process.exit(0);
 
     } catch (err) {
-        console.error("❌ Errore reset:", err);
+        console.error("Errore reset:", err);
         process.exit(1);
     }
 }

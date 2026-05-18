@@ -1,5 +1,15 @@
 /**
- * 
+ * Script di seed per popolare il database con dati di esempio al primo avvio.
+ * Esegue le seguenti operazioni:
+ * 1. Connessione a MongoDB
+ * 2. Pulizia completa del database
+ * 3. Importazione dei piatti dal file meals.json
+ * 4. Creazione utenti Customer e Restaurateur
+ * 5. Creazione dei profili Customer e Restaurateur
+ * 6. Creazione di ristoranti associati al Restaurateur
+ * 7. Popolamento dei menu dei ristoranti con piatti copiati dal catalogo
+ * 8. Creazione di un ordine di test per il Customer
+ * 9. Log di successo o errori
  */
 
 /* A - IMPORTS */
@@ -35,7 +45,7 @@ async function seedDatabase() {
             dbName: process.env.DB_NAME
         });
 
-        console.log("✔ Connessione MongoDB riuscita");
+        console.log("-----------Connessione MongoDB riuscita-----------");
 
         // RESET COMPLETO
         await Promise.all([
@@ -48,7 +58,7 @@ async function seedDatabase() {
             Order.deleteMany({})
         ]);
 
-        console.log("✔ Database pulito");
+        console.log("Database pulito");
 
         /* B.1 - IMPORT DISHES */
         // Loads meals from meals.json 
@@ -69,10 +79,9 @@ async function seedDatabase() {
 
         await Dish.insertMany(catalogDishes);
 
-        console.log("✔ Catalogo importato");
+        console.log("- Catalogo importato");
 
         /* B.2 - USER CREATION*/
-
         const customerUser = await User.create({
             firstName: 'Mario',
             lastName: 'Rossi',
@@ -111,7 +120,7 @@ async function seedDatabase() {
         });
 
 
-        console.log("✔ Utenti creati");
+        console.log("- Utenti creati");
 
         /* B.3 - PROFILES */
         // Customer profiles
@@ -124,7 +133,7 @@ async function seedDatabase() {
             paymentMethod: 'CREDIT_CARD'
         });
 
-        console.log("✔ Profilo Customer creato");
+        console.log("- Profilo Customer creato");
 
         // Restaurateur profiles
         const restaurateur = await Restaurateur.create({
@@ -155,7 +164,7 @@ async function seedDatabase() {
         });
 
 
-        console.log("✔ Profilo Restaurateur creato");
+        console.log("- Profilo Restaurateur creato");
 
         /* B.4 - RESTAURANTS */
         const restaurant0 = await Restaurant.create({
@@ -238,9 +247,8 @@ async function seedDatabase() {
             restaurateurId: restaurateur2._id
         });
 
-        console.log("✔ Ristorante creato");
+        console.log("- Ristorante creato");
 
-        /* B.5 - POPULATE MENU */
         /* B.5 - POPULATE MENU */
 
         const sampleDishes = await Dish.find({ source: 'catalog' }).limit(5);
@@ -278,10 +286,9 @@ async function seedDatabase() {
             await restaurant.save();
         }
 
-        console.log("✔ Menu creati e collegati");
+        console.log("- Menu creati e collegati");
 
         /* B.6 - ORDERS */
-
         // prendo un piatto appartenente al ristorante 0
         const firstDish = await Dish.findOne({ restaurantId: restaurant0._id });
 
@@ -298,13 +305,13 @@ async function seedDatabase() {
             status: 'ORDINATO'
         });
 
-        console.log("✔ Ordine di test creato");
+        console.log("- Ordine di test creato");
 
-        console.log("\n🎉 SEED COMPLETATO CON SUCCESSO");
+        console.log("\n------------------------SEED COMPLETATO CON SUCCESSO-------------------------\n");
         process.exit(0);
 
     } catch (err) {
-        console.error("❌ ERRORE SEED:", err);
+        console.error("ERRORE SEED:", err);
         process.exit(1);
     }
 }

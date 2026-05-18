@@ -19,7 +19,7 @@ function runCommand(command, message) {
 }
 
 async function startServer() {
-    console.log("🚀 Avvio server...");
+    console.log("--- > Avvio server...");
 
     const backendPath = path.join(__dirname, "..", "src");
 
@@ -32,10 +32,10 @@ async function startServer() {
 
 (async () => {
     try {
-        await runCommand("npm run db:reset", "🔄 Reset database...");
-        await runCommand("npm run db:seed:first", "🌱 Seed iniziale...");
+        await runCommand("npm run db:reset", "Reset database...");
+        await runCommand("npm run db:seed:first", "Seed iniziale...");
         await startServer();
     } catch (err) {
-        console.error("❌ Errore:", err);
+        console.error("Errore:", err);
     }
 })();
