@@ -51,7 +51,7 @@ router.get('/', async (req, res) => {
     }
 
     const restaurants = await Restaurant.find(filter)
-      .select('displayName address openingHours imageUrl category tags');
+      .select('displayName address openingHours imageUrl category tags phoneNumber');
 
     res.status(200).json({
       success: true,

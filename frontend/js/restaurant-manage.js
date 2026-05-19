@@ -580,8 +580,8 @@ function showOrderDetails(order) {
                 <td>${item.dishId.name}</td>
                 <td>${item.quantity}</td>
                 <td>
-                    € ${dish?.price
-                    ? (dish.price * item.quantity).toFixed(2)
+                    € ${item.dishId?.price
+                    ? (item.dishId.price * item.quantity).toFixed(2)
                     : '0.00'}
                 </td>
             </tr>

@@ -31,7 +31,6 @@ const Dish = require(path.join(modelsPath, 'Dish'));
 const Order = require(path.join(modelsPath, 'Order'));
 
 /* B - SEED LOGIC */
-
 // Load meals from meals.json
 function loadMeals() {
     const filePath = path.join(__dirname, '../../data/meals.json');
@@ -91,13 +90,21 @@ async function seedDatabase() {
             role: 'CUSTOMER'
         });
 
+        const customerUser1 = await User.create({
+            firstName: 'Luigi',
+            lastName: 'Verdi',
+            email: 'luigi@test.com',
+            password: 'password123',
+            phoneNumber: '3330000002',
+            role: 'CUSTOMER'
+        });
 
         const restaurateurUser = await User.create({
             firstName: 'Carlo',
             lastName: 'Neri',
             email: 'carlo@test.com',
             password: 'password123',
-            phoneNumber: '3330000002',
+            phoneNumber: '3340000001',
             role: 'RESTAURATEUR'
         });
 
@@ -106,7 +113,7 @@ async function seedDatabase() {
             lastName: 'Neri',
             email: 'giovanni@test.com',
             password: 'password123',
-            phoneNumber: '3330000003',
+            phoneNumber: '3340000002',
             role: 'RESTAURATEUR'
         });
 
@@ -115,7 +122,25 @@ async function seedDatabase() {
             lastName: 'Neri',
             email: 'antonio@test.com',
             password: 'password123',
-            phoneNumber: '3330000004',
+            phoneNumber: '3340000003',
+            role: 'RESTAURATEUR'
+        });
+
+        const restaurateurUser3 = await User.create({
+            firstName: 'Francesco',
+            lastName: 'Neri',
+            email: 'francesco@test.com',
+            password: 'password123',
+            phoneNumber: '3340000004',
+            role: 'RESTAURATEUR'
+        });
+
+        const restaurateurUser4 = await User.create({
+            firstName: 'Giuseppe',
+            lastName: 'Neri',
+            email: 'giuseppe@test.com',
+            password: 'password123',
+            phoneNumber: '3340000005',
             role: 'RESTAURATEUR'
         });
 
@@ -142,7 +167,7 @@ async function seedDatabase() {
             legalRepresentativeName: 'Carlo Neri',
             adminEmail: 'admin@trattoriacarlo.it',
             bankAccountHolder: 'Carlo Neri',
-            IBAN: 'IT60X0542811101000000123456'
+            IBAN: 'IT60X0542811101000000123451'
         });
 
         const restaurateur1 = await Restaurateur.create({
@@ -158,9 +183,27 @@ async function seedDatabase() {
             userId: restaurateurUser2._id,
             VATNumber: 'IT12345678903',
             legalRepresentativeName: 'Antonio Neri',
-            adminEmail: 'admin@trattoriacarlo.it',
-            bankAccountHolder: 'Carlo Neri',
-            IBAN: 'IT60X0542811101000000123456'
+            adminEmail: 'admin@trattoriantonio.it',
+            bankAccountHolder: 'Antonio Neri',
+            IBAN: 'IT60X0542811101000000123452'
+        });
+
+        const restaurateur3 = await Restaurateur.create({
+            userId: restaurateurUser3._id,
+            VATNumber: 'IT12345678904',
+            legalRepresentativeName: 'Francesco Neri',
+            adminEmail: 'admin@trattoriafrancesco.it',
+            bankAccountHolder: 'Francesco Neri',
+            IBAN: 'IT60X0542811101000000123453'
+        });
+
+        const restaurateur4 = await Restaurateur.create({
+            userId: restaurateurUser4._id,
+            VATNumber: 'IT12345678905',
+            legalRepresentativeName: 'Giuseppe Neri',
+            adminEmail: 'admin@trattoriagiuseppe.it',
+            bankAccountHolder: 'Giuseppe Neri',
+            IBAN: 'IT60X0542811101000000123454'
         });
 
 
@@ -173,16 +216,16 @@ async function seedDatabase() {
             phoneNumber: '0299999999',
             email: 'info@trattoriacarlo.it',
             address: {
-                street: 'Via Roma',
+                street: 'Via Frtelli Rosselli',
                 number: '10',
-                zip: '20100',
-                city: 'Milano',
-                province: 'MI'
+                zip: '75100',
+                city: 'Matera',
+                province: 'MT'
             },
             openingHours: 'Lun-Dom 12:00 - 23:00',
             description: 'Cucina italiana tradizionale',
-            websiteUrl: 'https://trattoriacarlo.it',
-            imageUrl: '',
+            websiteUrl: 'https://trattoriacarlo1.it',
+            imageUrl: 'https://i0.wp.com/www.viaggiascrittori.com/wp-content/uploads/2024/02/53274856469_564bdbe9ce_b.jpg?fit=800%2C534&ssl=1',
             status: 'ACTIVE',
             restaurateurId: restaurateur._id
         });
@@ -193,16 +236,16 @@ async function seedDatabase() {
             phoneNumber: '0299999998',
             email: 'info@trattoriacarlo.it',
             address: {
-                street: 'Via Povia',
+                street: 'Via Sinni',
                 number: '11',
-                zip: '20100',
-                city: 'Milano',
-                province: 'MI'
+                zip: '75100',
+                city: 'Matera',
+                province: 'MT'
             },
             openingHours: 'Lun-Dom 12:00 - 23:00',
             description: 'Cucina italiana tradizionale',
-            websiteUrl: 'https://trattoriacarlo.it',
-            imageUrl: '',
+            websiteUrl: 'https://trattoriacarlo2.it',
+            imageUrl: 'https://amministrazione.ratio.it/media/famiglia/1586896804-9121.jpeg',
             status: 'ACTIVE',
             restaurateurId: restaurateur._id
         });
@@ -211,17 +254,17 @@ async function seedDatabase() {
             legalName: 'Giovanni Food S.R.L.',
             displayName: 'Trattoria da Giovanni',
             phoneNumber: '0299997999',
-            email: 'info@trattoriacarlo.it',
+            email: 'info@trattoriagiovanni.it',
             address: {
-                street: 'Via Roma',
+                street: 'Via Pretoria',
                 number: '10',
-                zip: '20100',
-                city: 'Milano',
-                province: 'MI'
+                zip: '58100',
+                city: 'Potenza',
+                province: 'PZ'
             },
             openingHours: 'Lun-Dom 12:00 - 23:00',
             description: 'Cucina italiana tradizionale',
-            websiteUrl: 'https://trattoriacarlo.it',
+            websiteUrl: 'https://trattoriagiovanni.it',
             imageUrl: '',
             status: 'ACTIVE',
             restaurateurId: restaurateur1._id
@@ -231,20 +274,40 @@ async function seedDatabase() {
             legalName: 'Antonio S.R.L.',
             displayName: 'Trattoria da Antonio',
             phoneNumber: '0299999989',
-            email: 'info@trattoriacarlo.it',
+            email: 'info@trattoriantonio.it',
             address: {
-                street: 'Via Roma',
+                street: 'Via Togliatti',
                 number: '10',
-                zip: '20100',
-                city: 'Milano',
-                province: 'MI'
+                zip: '75020',
+                city: 'Scanzano Jonico',
+                province: 'MT'
             },
             openingHours: 'Lun-Dom 12:00 - 23:00',
             description: 'Cucina italiana tradizionale',
-            websiteUrl: 'https://trattoriacarlo.it',
-            imageUrl: 'https://media.macphun.com/img/uploads/macphun/blog/2986/image32.jpg?q=75&w=1710&h=906&resize=cover',
+            websiteUrl: 'https://trattoriantonio.it',
+            imageUrl: 'https://cdn-bd.ionet.it/villaggiotorredelfaro4/misvagotravel/gallery/1b47c003c9bb11ed98eb0a069e529790.jpg',
             status: 'ACTIVE',
             restaurateurId: restaurateur2._id
+        });
+
+        const restaurant4 = await Restaurant.create({
+            legalName: 'Francesco S.R.L.',
+            displayName: 'Trattoria da Francesco',
+            phoneNumber: '02999999879',
+            email: 'info@trattoriafrancesco.it',
+            address: {
+                street: 'Via Pretoria',
+                number: '10',
+                zip: '58100',
+                city: 'Potenza',
+                province: 'PZ'
+            },
+            openingHours: 'Lun-Dom 12:00 - 23:00',
+            description: 'Cucina italiana tradizionale',
+            websiteUrl: 'https://trattoriafrancesco.it',
+            imageUrl: '',
+            status: 'ACTIVE',
+            restaurateurId: restaurateur3._id
         });
 
         console.log("- Ristorante creato");
@@ -253,7 +316,7 @@ async function seedDatabase() {
 
         const sampleDishes = await Dish.find({ source: 'catalog' }).limit(5);
 
-        const restaurants = [restaurant0, restaurant1, restaurant2, restaurant3];
+        const restaurants = [restaurant0, restaurant1, restaurant2, restaurant3, restaurant4];
 
         for (const restaurant of restaurants) {
 
