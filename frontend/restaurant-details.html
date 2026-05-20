@@ -61,7 +61,6 @@
                 return;
             }
             loadRestaurantData(); // Carica i dati del ristorante e i piatti 
-            updateCartBadge(); // Aggiorna il badge del carrello all'avvio della pagina
         }
 
         // caricamento dati ristorante e menù
@@ -296,22 +295,6 @@
             updateCartBadge();
         }
 
-        function updateCartBadge() {
-            const badge = document.getElementById("cart-count");
-            const cart = getCart();
-
-            if (!badge) return;
-
-            if (!cart || !cart.items.length) {
-                badge.textContent = 0;
-                return;
-            }
-
-            const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-            badge.textContent = totalItems;
-        }
-
-
         function addToCart(dishId) {
 
             const cart = getCart();
@@ -352,7 +335,7 @@
         initPage();
 
     </script>
-    <script type="module"> import { renderNavbar } from '/js/utils/navbar.js'; renderNavbar() </script>
+    <script type="module"> import { renderNavbar, updateCartBadge } from '/js/utils/navbar.js'; renderNavbar(); updateCartBadge(); </script>
     <script src="/js/session.js"></script>
 
 </body>

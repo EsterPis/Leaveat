@@ -22,21 +22,6 @@
   </main>
 
   <script>
-    // badge carrello, mostra il numero totale di piatti nel carrello
-    function updateCartBadge() {
-      const badge = document.getElementById("cart-count");
-      const cart = JSON.parse(localStorage.getItem("cart")) || null;
-
-      if (!badge) return;
-
-      if (!cart || !cart.items.length) {
-        badge.textContent = 0;
-        return;
-      }
-      const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-      badge.textContent = totalItems;
-    }
-
     // carica gli ordini dell'utente loggato
     async function loadOrders() {
       const token = localStorage.getItem("token");
@@ -165,7 +150,6 @@
     }
 
     // ================= INIT =================
-    updateCartBadge();
     loadOrders();
 
   </script>

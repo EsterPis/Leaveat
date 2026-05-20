@@ -36,21 +36,6 @@
       updateCartBadge();
     }
 
-    // Aggiorna il badge del carrello nella navbar
-    function updateCartBadge() {
-      const badge = document.getElementById("cart-count");
-      const cart = getCart();
-
-      if (!badge) return;
-      if (!cart || !cart.items.length) {
-        badge.textContent = 0;
-        return;
-      }
-
-      const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0); // conta elementi totali
-      badge.textContent = totalItems;
-    }
-
     // ================= RENDER CARRELLO =================
     // Renderizza il contenuto del carrello nella pagina
     function renderCart() {
@@ -234,10 +219,7 @@
     }
 
     // ================= INIT =================
-    window.addEventListener("load", () => {
-      updateCartBadge();
-      renderCart();
-    });
+    renderCart();
   </script>
 
   <!-- ================= MODALE CONFERMA ORDINE ================= -->
@@ -272,7 +254,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module"> import { renderNavbar } from '/js/utils/navbar.js'; renderNavbar() </script>
+  <script type="module"> import { renderNavbar, updateCartBadge } from '/js/utils/navbar.js'; renderNavbar(); updateCartBadge(); </script>
   <script src="/js/session.js"></script>
 
 </body>
