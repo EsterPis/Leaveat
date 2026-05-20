@@ -25,33 +25,34 @@
 
   <script>
     // ================= UTIL CARRELLO =================
-
+    // Preleva il carrello dallo storage, o ritorna null se non esiste
     function getCart() {
       return JSON.parse(localStorage.getItem("cart")) || null;
     }
 
+    // Salva il carrello nello storage e aggiorna il badge
     function saveCart(cart) {
       localStorage.setItem("cart", JSON.stringify(cart));
       updateCartBadge();
     }
 
+    // Aggiorna il badge del carrello nella navbar
     function updateCartBadge() {
       const badge = document.getElementById("cart-count");
       const cart = getCart();
 
       if (!badge) return;
-
       if (!cart || !cart.items.length) {
         badge.textContent = 0;
         return;
       }
 
-      const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+      const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0); // conta elementi totali
       badge.textContent = totalItems;
     }
 
     // ================= RENDER CARRELLO =================
-
+    // Renderizza il contenuto del carrello nella pagina
     function renderCart() {
       const cart = getCart();
       const container = document.getElementById("cartContainer");
@@ -60,78 +61,71 @@
       container.innerHTML = "";
       summary.innerHTML = "";
 
+      // messaggio carrello vuoto
       if (!cart || !cart.items.length) {
         container.innerHTML = `
-      <div class="alert alert-info">
-        Il carrello è vuoto.
-      </div>
-    `;
+          <div class="alert alert-info">
+            Il carrello è vuoto.
+          </div>
+        `;
         return;
       }
 
       let total = 0;
-
       cart.items.forEach(item => {
-
-        const itemTotal = item.price * item.quantity;
+        const itemTotal = item.price * item.quantity; // calcola totale per questo piatto
         total += itemTotal;
 
+        // renderizza una riga per piatto
         const row = document.createElement("div");
         row.className = "card mb-3";
-
         row.innerHTML = `
-      <div class="card-body d-flex justify-content-between align-items-center">
-
-        <div>
-          <h5 class="mb-1">${item.name}</h5>
-          <small class="text-muted">€ ${item.price.toFixed(2)}</small>
-        </div>
-
-        <div class="d-flex align-items-center gap-2">
-
+          <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="mb-1">${item.name}</h5>
+            <small class="text-muted">€ ${item.price.toFixed(2)}</small>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <!-- pulsanti per modificare quantità e rimuovere -->
           <button class="btn btn-sm btn-outline-secondary"
                   onclick="changeQuantity('${item.dishId}', -1)">
             -
           </button>
-
           <span>${item.quantity}</span>
-
           <button class="btn btn-sm btn-outline-secondary"
                   onclick="changeQuantity('${item.dishId}', 1)">
             +
           </button>
-
           <button class="btn btn-sm btn-outline-danger"
                   onclick="removeItem('${item.dishId}')">
             <i class="bi bi-trash"></i>
           </button>
+          </div>
 
         </div>
-
-      </div>
-    `;
+        `;
 
         container.appendChild(row);
       });
 
       summary.innerHTML = `
-    <div class="card">
-      <div class="card-body d-flex justify-content-between align-items-center">
+        <div class="card">
+          <div class="card-body d-flex justify-content-between align-items-center">
 
-        <h4>Totale: € ${total.toFixed(2)}</h4>
+            <h4>Totale: € ${total.toFixed(2)}</h4>
 
-        <button class="btn btn-success"
-                onclick="confirmOrder()">
-          Conferma Ordine
-        </button>
+            <button class="btn btn-success"
+                    onclick="confirmOrder()">
+              Conferma Ordine
+            </button>
 
-      </div>
-    </div>
-  `;
+          </div>
+        </div>
+      `;
     }
 
     // ================= MODIFICA QUANTITÀ =================
-
+    // Modifica la quantità di un piatto nel carrello, o lo rimuove se la quantità scende a 0
     function changeQuantity(dishId, delta) {
       const cart = getCart();
       if (!cart) return;
@@ -145,24 +139,37 @@
         cart.items = cart.items.filter(i => i.dishId !== dishId);
       }
 
+      if (!cart.items.length) {
+        localStorage.removeItem("cart");
+        updateCartBadge();
+        renderCart();
+        return;
+      }
+
       saveCart(cart);
       renderCart();
     }
 
+    // Rimuove completamente un piatto dal carrello
     function removeItem(dishId) {
       const cart = getCart();
       if (!cart) return;
 
       cart.items = cart.items.filter(i => i.dishId !== dishId);
+      if (!cart.items.length) {
+        localStorage.removeItem("cart");
+        updateCartBadge();
+        renderCart();
+        return;
+      }
 
       saveCart(cart);
       renderCart();
     }
 
     // ================= CONFERMA ORDINE =================
-
+    // Invia il carrello al backend per creare un nuovo ordine
     async function confirmOrder() {
-
       const token = localStorage.getItem("token");
       const role = localStorage.getItem("role");
 
@@ -181,7 +188,7 @@
       if (!cart || !cart.items.length) return;
 
       try {
-
+        //chiamata backend
         const response = await fetch("/api/lv/orders", {
           method: "POST",
           headers: {
@@ -212,10 +219,8 @@
 
         const ordersData = await ordersRes.json();
         const latestOrder = ordersData.data[0];
-        document.getElementById("estimatedTime").textContent =
-          latestOrder.estimatedWaitTime || 0;
-
-        localStorage.removeItem("cart");
+        document.getElementById("estimatedTime").textContent = latestOrder.estimatedWaitTime || 0;
+        localStorage.removeItem("cart"); // svuota carrello dopo conferma
         updateCartBadge();
         renderCart();
 
@@ -229,8 +234,10 @@
     }
 
     // ================= INIT =================
-    updateCartBadge();
-    renderCart();
+    window.addEventListener("load", () => {
+      updateCartBadge();
+      renderCart();
+    });
   </script>
 
   <!-- ================= MODALE CONFERMA ORDINE ================= -->

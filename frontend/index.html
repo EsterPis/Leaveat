@@ -51,9 +51,7 @@
     const results = document.getElementById('results');
     const noResults = document.getElementById('noResults');
 
-    // ----------------------------------------------------
-    // Carica ristoranti dal backend
-    // ----------------------------------------------------
+    // Caricamento ristoranti con parametri di ricerca
     async function fetchRestaurants(params = {}) {
       try {
         const queryString = new URLSearchParams(params).toString();
@@ -71,16 +69,10 @@
         noResults.style.display = 'none';
 
         restaurants.forEach(r => {
-
-          // Nome corretto dal tuo schema
           const name = r.displayName || r.legalName || "Ristorante";
-
-          // Indirizzo strutturato
           const address = r.address
             ? `${r.address.street} ${r.address.number}, ${r.address.city} (${r.address.province})`
             : "Indirizzo non disponibile";
-
-          // Fallback immagine
           const imageSrc = (r.imageUrl && r.imageUrl.trim() !== "")
             ? r.imageUrl
             : "/assets/logo-default.png";
@@ -88,30 +80,30 @@
           const col = document.createElement('div');
           col.className = 'col-12 col-md-6 col-lg-4';
 
+          // costruzione card ristorante
           col.innerHTML = `
-        <div class="card h-100 shadow-sm">
+            <div class="card h-100 shadow-sm">
+              <img src="${imageSrc}"
+                  onerror="this.src='/assets/logo-default.png'"
+                  class="card-img-top"
+                  alt="${name}"
+                  style="height:200px; object-fit:cover;">
 
-          <img src="${imageSrc}"
-               onerror="this.src='/assets/logo-default.png'"
-               class="card-img-top"
-               alt="${name}"
-               style="height:200px; object-fit:cover;">
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title">${name}</h5>
 
-          <div class="card-body d-flex flex-column">
-            <h5 class="card-title">${name}</h5>
+                <p class="card-text small text-muted mb-3">
+                  ${address}<br>
+                  ${r.phoneNumber || "Telefono non disponibile"}
+                </p>
 
-            <p class="card-text small text-muted mb-3">
-              ${address}<br>
-              ${r.phoneNumber || "Telefono non disponibile"}
-            </p>
-
-            <a href="/restaurant-details.html?id=${r._id}"
-               class="btn btn-outline-primary btn-sm mt-auto">
-               Visualizza menu
-            </a>
-          </div>
-        </div>
-      `;
+                <a href="/restaurant-details.html?id=${r._id}"
+                  class="btn btn-outline-primary btn-sm mt-auto">
+                  Visualizza menu
+                </a>
+              </div>
+            </div>
+          `;
 
           results.appendChild(col);
         });
@@ -132,18 +124,16 @@
 
     form.addEventListener('input', () => {
       const formData = Object.fromEntries(new FormData(form).entries());
-
       // Se entrambi vuoti → ricarica tutto
       if (!formData.name && !formData.city) {
         fetchRestaurants({});
       }
     });
 
+    // click pulsante ricerca
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-
       let formData = Object.fromEntries(new FormData(form).entries());
-
       // Rimuove campi vuoti
       Object.keys(formData).forEach(key => {
         if (!formData[key]) delete formData[key];
@@ -162,7 +152,7 @@
     renderNavbar();
   </script>
   <script src="/js/session.js"></script>
-  <script src="/js/index.js"></script> <!-- Dopo session perchè ha bisogno di verificare se l'utnete è loggato-->
+  <script src="/js/index.js"></script> <!-- Dopo session perchè ha bisogno di verificare se l'utente è loggato-->
 
 </body>
 

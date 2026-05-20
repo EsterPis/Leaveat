@@ -89,13 +89,19 @@
                     </table>
                 </div>
             </div>
-
             <div class="tab-pane fade" id="orders-pane" role="tabpanel">
                 <div class="row">
-                    <div class="col-12 mb-3">
+                    <div class="col-12 mb-3 d-flex align-items-center gap-3">
                         <button class="btn btn-primary btn-sm" id="btn-refresh-orders">
                             <i class="fas fa-sync"></i> Aggiorna Ordini
                         </button>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="show-history-checkbox">
+                            <label class="form-check-label" for="show-history-checkbox">
+                                Visualizza storico completo
+                            </label>
+                        </div>
+
                     </div>
                     <div class="col-12" id="orders-container">
                         <div class="alert alert-info">Nessun ordine attivo al momento.</div>

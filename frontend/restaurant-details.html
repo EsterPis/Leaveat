@@ -16,78 +16,55 @@
     <!--Dynamic navbar-->
     <!-- ================= CONTENUTO ================= -->
     <main class="container py-4">
-
         <!-- Sezione info ristorante -->
         <div id="restaurantInfo" class="mb-5"></div>
-
         <hr>
-
         <!-- Sezione menu -->
         <h3 class="mb-3">Menu</h3>
         <div class="card mb-4">
             <div class="card-body">
-
                 <div class="row g-3">
-
                     <!-- Nome -->
                     <div class="col-md-3">
                         <input type="text" id="filterName" class="form-control" placeholder="Nome piatto">
                     </div>
-
                     <!-- Categoria -->
                     <div class="col-md-3">
                         <select id="filterCategory" class="form-select">
                             <option value="">Tutte le categorie</option>
                         </select>
                     </div>
-
                     <!-- Prezzo max -->
                     <div class="col-md-3">
                         <input type="number" id="filterPrice" class="form-control" placeholder="Prezzo massimo">
                     </div>
-
                     <!-- Ingredienti -->
                     <div class="col-md-3">
                         <input type="text" id="filterIngredients" class="form-control" placeholder="Ingrediente">
                     </div>
-
                 </div>
-
             </div>
         </div>
         <div id="menuContainer" class="row g-3"></div>
-
     </main>
 
     <script>
-
-        // =============================
-        // STATE
-        // =============================
         let currentDishes = [];
         let currentDishIds = [];
         let restaurantId = null;
 
-
-        // =============================
-        // INIT APP (MAIN)
-        // =============================
+        // init page
         function initPage() {
-            restaurantId = getRestaurantId();
-
+            restaurantId = getRestaurantId(); // Ottieni l'ID del ristorante dai parametri URL
             if (!restaurantId) {
                 alert("Ristorante non valido.");
                 return;
             }
-
-            loadRestaurantData();
-            updateCartBadge();
+            loadRestaurantData(); // Carica i dati del ristorante e i piatti 
+            updateCartBadge(); // Aggiorna il badge del carrello all'avvio della pagina
         }
 
-
-        // =============================
-        // API
-        // =============================
+        // caricamento dati ristorante e menù
         async function loadRestaurantData() {
             try {
                 const response = await fetch(`/api/lv/restaurants/${restaurantId}`);
@@ -96,12 +73,10 @@
                 if (!result.success) throw new Error(result.message);
 
                 const restaurant = result.data;
-
-                renderRestaurantInfo(restaurant);
+                renderRestaurantInfo(restaurant); // Mostra le informazioni del ristorante
 
                 const dishes = restaurant.menuId?.dishIds || [];
                 currentDishIds = dishes.map(d => d._id);
-                console.log("DISH IDS:", currentDishIds);
 
                 await loadInitialDishes();
             } catch (err) {
@@ -110,10 +85,10 @@
             }
         }
 
+        // caricamento iniziale dei piatti (senza filtri)
         async function loadInitialDishes() {
             try {
                 const query = `dishIds=${currentDishIds.join(',')}`;
-
                 console.log("LOAD INIT:", `/api/lv/dishes?${query}`);
 
                 const response = await fetch(`/api/lv/dishes?${query}`);
@@ -135,6 +110,7 @@
         // =============================
         // UTILS
         // =============================
+        // Estrae l'ID del ristorante dai parametri URL
         function getRestaurantId() {
             const params = new URLSearchParams(window.location.search);
             return params.get('id');

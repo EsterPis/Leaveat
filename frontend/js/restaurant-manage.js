@@ -22,6 +22,11 @@ function initPage() {
     bindImportModal();
 
     loadInitialData();
+
+    // refresh automatico ordini ogni 60 secondi
+    setInterval(() => {
+        loadOrders();
+    }, 60000);
 }
 
 /*------------------------------ UTILITY FUNCTIONS --------------------------------------------------- */
@@ -77,6 +82,13 @@ function bindStaticEvents() {
     const btnAddDish = document.getElementById('btn-add-dish');
     if (btnAddDish) {
         btnAddDish.addEventListener('click', openAddDishModal);
+    }
+
+    // Checkbox storico ordini
+    const historyCheckbox = document.getElementById('show-history-checkbox');
+
+    if (historyCheckbox) {
+        historyCheckbox.addEventListener('change', loadOrders);
     }
 }
 
@@ -503,14 +515,25 @@ async function loadOrders() {
         const json = await response.json();
         const orders = json.data || [];
 
+        // verifica stato checkbox
+        const showHistory = document.getElementById('show-history-checkbox')?.checked;
+        //aggiornamento badge numero ordini in attesa
+        const activeOrders = orders.filter(order =>
+            order.status !== 'CONSEGNATO' &&
+            order.status !== 'ANNULLATO'
+        );
+        document.getElementById('pending-badge').textContent = activeOrders.length;
+        const visibleOrders = showHistory ? orders : activeOrders; // mostra tutti gli ordini se storico, altrimenti solo quelli attivi
+        
         container.innerHTML = '';
-        if (!orders.length) {
-            container.innerHTML = '<div class="alert alert-info">Nessun ordine</div>';
+        if (!visibleOrders.length) {
+            document.getElementById('pending-badge').textContent = '0';
+            container.innerHTML = '<div class="alert alert-info">Nessun ordine attivo al momento.</div>';
             return;
         }
 
         // creazione card per ogni ordine con badge di stato colorato
-        orders.forEach(order => {
+        visibleOrders.forEach(order => {
             let badgeClass = 'bg-secondary';
             if (order.status === 'ORDINATO') badgeClass = 'bg-warning text-dark';
             if (order.status === 'IN_PREPARAZIONE') badgeClass = 'bg-info text-dark';
@@ -581,8 +604,8 @@ function showOrderDetails(order) {
                 <td>${item.quantity}</td>
                 <td>
                     € ${item.dishId?.price
-                    ? (item.dishId.price * item.quantity).toFixed(2)
-                    : '0.00'}
+                ? (item.dishId.price * item.quantity).toFixed(2)
+                : '0.00'}
                 </td>
             </tr>
         `;
@@ -627,7 +650,7 @@ async function updateStatus(orderId, newStatus) {
     try {
         // richiesta al backend per aggiornamento stato ordine
         const response = await fetch(`/api/lv/orders/${orderId}/status`, {
-            method: 'PATCH', 
+            method: 'PATCH',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -649,23 +672,40 @@ async function updateStatus(orderId, newStatus) {
 
 /*------------------------------ GESTIONE RISTORANTE --------------------------------------------------- */
 // Eliminazione definitiva ristorante
+// Eliminazione definitiva ristorante
 async function deleteRestaurant() {
-    //richiesta di conferma con dialogo nativo
+
     if (!confirm("Sei sicuro?")) return;
 
     try {
-        // richiesta al backend
+
         const response = await fetch(`/api/lv/restaurants/${restaurantId}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
         });
 
+        const json = await response.json();
+
         if (response.ok) {
-            window.location.href = "restaurateur-dashboard.html"; //reindirizzamento alla dashboard
+
+            alert(json.message || "Ristorante eliminato con successo");
+
+            window.location.href = "restaurateur-dashboard.html";
+
+        } else {
+
+            // Mostra il messaggio restituito dal backend
+            alert(json.message || "Impossibile eliminare il ristorante");
+
         }
 
     } catch (err) {
+
         console.error(err);
+        alert("Errore di rete");
+
     }
 }
 

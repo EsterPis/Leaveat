@@ -78,7 +78,6 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
-      // 1. Recupera l'ID dall'URL (?id=...)
       const params = new URLSearchParams(window.location.search);
       const dishId = params.get('id');
 
@@ -88,7 +87,7 @@
       }
 
       try {
-        // La rotta: app.use('/api/lv/dishes', dishRoutes) -> GET /:id
+        // chiamata API per ottenere i dettagli del piatto
         const res = await fetch(`/api/lv/dishes/${dishId}`);
         const json = await res.json();
 
@@ -96,18 +95,16 @@
           throw new Error(json.message || "Errore API");
         }
 
-        const dish = json.data; // Assumo che l'API restituisca { data: { ... } }
+        const dish = json.data; 
 
-        // 2. Popola il DOM
-        document.getElementById('dishImg').src = dish.imageUrl || dish.image || 'https://via.placeholder.com/800x400?text=No+Image';
+        // Popolamento del dom
+        document.getElementById('dishImg').src = dish.imageUrl || dish.image || 'assets/banner.png';
         document.getElementById('dishName').textContent = dish.name;
         document.getElementById('dishCategory').textContent = dish.category || 'Generico';
         document.getElementById('dishArea').textContent = dish.area || 'Internazionale';
         document.getElementById('dishDesc').textContent = dish.description || 'Nessuna descrizione disponibile.';
-        document.getElementById('dishId').textContent = dish.externalId || dish._id;
-        
-        // Gestione prezzo (se presente nel DB bene, altrimenti mostra N/A)
-        const price = dish.price ? `€ ${dish.price.toFixed(2)}` : 'N/A';
+        document.getElementById('dishId').textContent = dish.externalId || dish._id; 
+        const price = dish.price ? `€ ${dish.price.toFixed(2)}` : 'N/A'; //se prezzo non disponibile mostra N/A
         document.getElementById('dishPrice').textContent = price;
 
         // Ingredienti
