@@ -367,7 +367,30 @@ async function seedDatabase() {
             totalPrice: firstDish.price * 2,
             status: 'ORDINATO'
         });
+        console.log("- Ordine di test creato");
 
+        // creazione ordine consegnato
+        const dishes = await Dish.find({ restaurantId: restaurant0._id }).limit(2);
+
+        const dishOne = dishes[0];
+        const dishTwo = dishes[1];
+
+        const secondOrder = await Order.create({
+            customerId: customerUser._id,
+            restaurantId: restaurant0._id,
+            items: [
+                {
+                    dishId: dishOne._id,
+                    quantity: 1
+                },
+                {
+                    dishId: dishTwo._id,
+                    quantity: 2
+                }
+            ],
+            totalPrice: (dishOne.price * 1) + (dishTwo.price * 2),
+            status: 'CONSEGNATO'
+        });
         console.log("- Ordine di test creato");
 
         console.log("\n------------------------SEED COMPLETATO CON SUCCESSO-------------------------\n");
