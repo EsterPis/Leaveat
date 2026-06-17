@@ -24,10 +24,6 @@ DB_NAME=leaveat
 JWT_SECRET=password_super_sicura 
 TOKEN_EXPIRES_IN=24h
 
-Credenziali MongoDB Atlas:
-ester.atlante@studenti.unimi.it
-AdminPassword1
-
 Uri utilizzato in locale:
 mongodb://esteratlante:adminAdmin@ac-onoyjk5-shard-00-00.4no44bt.mongodb.net:27017,ac-onoyjk5-shard-00-01.4no44bt.mongodb.net:27017,ac-onoyjk5-shard-00-02.4no44bt.mongodb.net:27017/leaveat?ssl=true&replicaSet=atlas-tnnd8q-shard-0&authSource=admin&appName=EsterCluster
 
